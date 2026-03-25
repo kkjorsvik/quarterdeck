@@ -85,6 +85,7 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         socketRef.current = socket;
 
         socket.onopen = () => {
+          term.focus();
           options.onReady?.();
         };
 
