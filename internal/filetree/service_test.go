@@ -70,6 +70,40 @@ func TestReadDirFiltered(t *testing.T) {
     }
 }
 
+func TestListFiles(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "src"), 0755)
+	os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".git"), 0755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
+	os.WriteFile(filepath.Join(dir, "src", "app.ts"), []byte("export {}"), 0644)
+	os.WriteFile(filepath.Join(dir, "node_modules", "pkg", "index.js"), []byte(""), 0644)
+	os.WriteFile(filepath.Join(dir, ".git", "config"), []byte(""), 0644)
+
+	svc := NewService()
+	files, err := svc.ListFiles(dir)
+	if err != nil {
+		t.Fatalf("ListFiles failed: %v", err)
+	}
+
+	found := map[string]bool{}
+	for _, f := range files {
+		found[f] = true
+	}
+	if !found["main.go"] {
+		t.Error("expected main.go")
+	}
+	if !found[filepath.Join("src", "app.ts")] {
+		t.Error("expected src/app.ts")
+	}
+	if found[filepath.Join("node_modules", "pkg", "index.js")] {
+		t.Error("node_modules should be excluded")
+	}
+	if found[filepath.Join(".git", "config")] {
+		t.Error(".git should be excluded")
+	}
+}
+
 func TestWriteFile(t *testing.T) {
     dir := t.TempDir()
     path := filepath.Join(dir, "output.txt")

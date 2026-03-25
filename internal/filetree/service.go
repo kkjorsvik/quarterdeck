@@ -134,6 +134,29 @@ func filterGitIgnored(dirPath string, entries []FileEntry) []FileEntry {
     return filtered
 }
 
+func (s *Service) ListFiles(rootPath string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		name := info.Name()
+		if info.IsDir() {
+			if strings.HasPrefix(name, ".") || name == "node_modules" || name == "vendor" || name == "__pycache__" || name == "target" || name == "dist" || name == "build" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasPrefix(name, ".") {
+			return nil
+		}
+		rel, _ := filepath.Rel(rootPath, path)
+		files = append(files, rel)
+		return nil
+	})
+	return files, err
+}
+
 func (s *Service) ReadFile(filePath string) (string, error) {
     data, err := os.ReadFile(filePath)
     if err != nil {
