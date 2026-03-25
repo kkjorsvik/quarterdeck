@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Project } from '../lib/types';
+import { useLayoutStore } from './layoutStore';
 
 interface ProjectState {
   projects: Project[];
@@ -24,6 +25,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const state = get();
       if (!state.activeProjectId && projects && projects.length > 0) {
         set({ activeProjectId: projects[0].id });
+        useLayoutStore.getState().createProjectLayout();
       }
     } catch (err) {
       console.error('Failed to load projects:', err);
@@ -52,7 +54,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  setActiveProject: (id) => set({ activeProjectId: id }),
+  setActiveProject: (id) => {
+    const wasNull = get().activeProjectId === null;
+    set({ activeProjectId: id });
+    if (wasNull) {
+      useLayoutStore.getState().createProjectLayout();
+    }
+  },
 
   getActiveProject: () => {
     const state = get();
