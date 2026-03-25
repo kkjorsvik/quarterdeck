@@ -18,6 +18,10 @@ export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
 
+export function GetGitBranch(arg1) {
+  return window['go']['main']['App']['GetGitBranch'](arg1);
+}
+
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
 }
@@ -32,6 +36,10 @@ export function ListProjects() {
 
 export function ReadDir(arg1) {
   return window['go']['main']['App']['ReadDir'](arg1);
+}
+
+export function ReadDirFiltered(arg1) {
+  return window['go']['main']['App']['ReadDirFiltered'](arg1);
 }
 
 export function ReadFile(arg1) {

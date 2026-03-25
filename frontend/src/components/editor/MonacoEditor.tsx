@@ -2,32 +2,34 @@ import React, { useRef, useEffect } from 'react';
 import { useMonaco } from '../../hooks/useMonaco';
 import { useEditorStore } from '../../stores/editorStore';
 
-export function MonacoEditor() {
+interface MonacoEditorProps {
+  filePath?: string;
+}
+
+export function MonacoEditor({ filePath }: MonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const statusBarRef = useRef<HTMLDivElement>(null);
 
   const openFiles = useEditorStore(s => s.openFiles);
-  const activeFileIndex = useEditorStore(s => s.activeFileIndex);
   const updateContent = useEditorStore(s => s.updateContent);
   const markSaved = useEditorStore(s => s.markSaved);
-  const setActiveFile = useEditorStore(s => s.setActiveFile);
-  const closeFile = useEditorStore(s => s.closeFile);
 
-  const activeFile = activeFileIndex >= 0 ? openFiles[activeFileIndex] : null;
+  const fileIndex = openFiles.findIndex(f => f.path === filePath);
+  const file = fileIndex >= 0 ? openFiles[fileIndex] : null;
 
   const { editor, setValue } = useMonaco(containerRef, statusBarRef, {
-    value: activeFile?.content || '',
-    language: activeFile?.language || 'plaintext',
+    value: file?.content || '',
+    language: file?.language || 'plaintext',
     onChange: (value) => {
-      if (activeFileIndex >= 0) {
-        updateContent(activeFileIndex, value);
+      if (fileIndex >= 0) {
+        updateContent(fileIndex, value);
       }
     },
     onSave: async (value) => {
-      if (activeFile) {
+      if (file) {
         try {
-          await window.go.main.App.WriteFile(activeFile.path, value);
-          markSaved(activeFileIndex);
+          await window.go.main.App.WriteFile(file.path, value);
+          markSaved(fileIndex);
         } catch (err) {
           console.error('Failed to save file:', err);
         }
@@ -35,14 +37,14 @@ export function MonacoEditor() {
     },
   });
 
-  // Update editor content when active file changes
+  // Update editor content when filePath changes
   useEffect(() => {
-    if (activeFile) {
-      setValue(activeFile.content, activeFile.language);
+    if (file) {
+      setValue(file.content, file.language);
     }
-  }, [activeFileIndex]);
+  }, [filePath]);
 
-  if (openFiles.length === 0) {
+  if (!file) {
     return (
       <div style={{
         display: 'flex',
@@ -52,58 +54,14 @@ export function MonacoEditor() {
         color: 'var(--text-secondary)',
         fontSize: '14px',
       }}>
-        No files open
+        No file open
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* File tabs */}
-      <div style={{
-        display: 'flex',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border)',
-        overflow: 'auto',
-        flexShrink: 0,
-      }}>
-        {openFiles.map((file, index) => (
-          <div
-            key={file.path}
-            onClick={() => setActiveFile(index)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              borderRight: '1px solid var(--border)',
-              background: index === activeFileIndex ? 'var(--bg-primary)' : 'transparent',
-              color: index === activeFileIndex ? 'var(--text-primary)' : 'var(--text-secondary)',
-            }}
-          >
-            <span>{file.modified ? '● ' : ''}{file.name}</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); closeFile(index); }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                padding: 0,
-                fontSize: '12px',
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-      {/* Editor */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <div ref={containerRef} style={{ flex: 1, overflow: 'hidden' }} />
-      {/* Vim status bar */}
       <div
         ref={statusBarRef}
         style={{

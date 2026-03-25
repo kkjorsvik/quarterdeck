@@ -11,6 +11,8 @@ export function CreateTerminal(arg1:string,arg2:number,arg3:number):Promise<stri
 
 export function DeleteProject(arg1:number):Promise<void>;
 
+export function GetGitBranch(arg1:string):Promise<string>;
+
 export function GetProject(arg1:number):Promise<project.Project>;
 
 export function GetWSPort():Promise<number>;
@@ -18,6 +20,8 @@ export function GetWSPort():Promise<number>;
 export function ListProjects():Promise<Array<project.Project>>;
 
 export function ReadDir(arg1:string):Promise<Array<filetree.FileEntry>>;
+
+export function ReadDirFiltered(arg1:string):Promise<Array<filetree.FileEntry>>;
 
 export function ReadFile(arg1:string):Promise<string>;
 

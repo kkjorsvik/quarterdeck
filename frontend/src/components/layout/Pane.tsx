@@ -1,6 +1,6 @@
 import React from 'react';
 import type { LeafNode } from '../../lib/types';
-import { PaneHeader } from './PaneHeader';
+import { TabBar } from './TabBar';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { TerminalPanel } from '../terminal/Terminal';
 import { useProjectStore } from '../../stores/projectStore';
@@ -30,13 +30,24 @@ export function Pane({ node }: PaneProps) {
         overflow: 'hidden',
       }}
     >
-      <PaneHeader paneId={node.id} paneType={node.paneType} />
+      <TabBar paneId={node.id} tabs={node.tabs} activeTabIndex={node.activeTabIndex} />
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        {node.paneType === 'editor' ? (
-          <MonacoEditor />
-        ) : (
-          <TerminalPanel workDir={activeProject?.path || '/tmp'} />
-        )}
+        {node.tabs.map((tab, i) => (
+          <div
+            key={tab.id}
+            style={{
+              display: i === node.activeTabIndex ? 'flex' : 'none',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            {tab.type === 'terminal' ? (
+              <TerminalPanel workDir={activeProject?.path || '/tmp'} />
+            ) : (
+              <MonacoEditor filePath={tab.filePath} />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
