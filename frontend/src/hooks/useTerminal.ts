@@ -46,6 +46,9 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
     // Try WebGL renderer, fall back to canvas
     try {
       const webglAddon = new WebglAddon();
+      webglAddon.onContextLoss(() => {
+        webglAddon.dispose();
+      });
       term.loadAddon(webglAddon);
     } catch {
       // Canvas renderer is the default fallback
@@ -107,10 +110,6 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         term.onResize(({ cols, rows }) => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: 'resize', cols, rows }));
-          }
-          // Also tell the backend
-          if (sessionIdRef.current) {
-            window.go.main.App.ResizeTerminal(sessionIdRef.current, cols, rows).catch(() => {});
           }
         });
       } catch (err) {

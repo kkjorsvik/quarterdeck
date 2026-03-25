@@ -47,7 +47,7 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager) http.HandlerFunc {
 
 		// PTY -> WebSocket (write loop)
 		go func() {
-			buf := make([]byte, 4096)
+			buf := make([]byte, 8192)
 			for {
 				n, err := sess.Read(buf)
 				if err != nil {
