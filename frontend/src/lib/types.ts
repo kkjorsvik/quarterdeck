@@ -28,21 +28,26 @@ export interface SessionInfo {
 export type PaneType = 'terminal' | 'editor';
 export type SplitDirection = 'horizontal' | 'vertical';
 
+export interface PanelTab {
+  id: string;
+  type: PaneType;
+  title: string;
+  terminalId?: string;
+  filePath?: string;
+}
+
 export interface LeafNode {
   type: 'leaf';
   id: string;
-  paneType: PaneType;
-  // For editor panes
-  filePath?: string;
-  // For terminal panes
-  terminalId?: string;
+  tabs: PanelTab[];
+  activeTabIndex: number;
 }
 
 export interface SplitNode {
   type: 'split';
   id: string;
   direction: SplitDirection;
-  ratio: number; // 0-1, proportion of first child
+  ratio: number;
   children: [LayoutNode, LayoutNode];
 }
 
