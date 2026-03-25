@@ -14,6 +14,7 @@ declare global {
           GetProject(id: number): Promise<Project>;
           DeleteProject(id: number): Promise<void>;
           ReadDir(path: string): Promise<FileEntry[]>;
+          ReadDirFiltered(path: string): Promise<FileEntry[]>;
           ReadFile(path: string): Promise<string>;
           WriteFile(path: string, content: string): Promise<void>;
           CreateTerminal(workDir: string, cols: number, rows: number): Promise<string>;

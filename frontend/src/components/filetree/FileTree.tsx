@@ -16,7 +16,7 @@ export function FileTree({ rootPath }: FileTreeProps) {
     async function loadDir() {
       setLoading(true);
       try {
-        const result = await window.go.main.App.ReadDir(rootPath);
+        const result = await window.go.main.App.ReadDirFiltered(rootPath);
         if (!cancelled) {
           setEntries(result || []);
         }

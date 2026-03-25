@@ -46,6 +46,30 @@ func TestReadFile(t *testing.T) {
     }
 }
 
+func TestReadDirFiltered(t *testing.T) {
+    dir := t.TempDir()
+    os.Mkdir(filepath.Join(dir, "node_modules"), 0755)
+    os.Mkdir(filepath.Join(dir, ".git"), 0755)
+    os.Mkdir(filepath.Join(dir, "src"), 0755)
+    os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
+
+    svc := NewService()
+    entries, err := svc.ReadDirFiltered(dir)
+    if err != nil {
+        t.Fatalf("ReadDirFiltered failed: %v", err)
+    }
+
+    if len(entries) != 2 {
+        t.Fatalf("expected 2 entries, got %d: %+v", len(entries), entries)
+    }
+    if entries[0].Name != "src" {
+        t.Errorf("expected first entry 'src', got %q", entries[0].Name)
+    }
+    if entries[1].Name != "main.go" {
+        t.Errorf("expected second entry 'main.go', got %q", entries[1].Name)
+    }
+}
+
 func TestWriteFile(t *testing.T) {
     dir := t.TempDir()
     path := filepath.Join(dir, "output.txt")

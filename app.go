@@ -90,6 +90,10 @@ func (a *App) ReadDir(path string) ([]filetree.FileEntry, error) {
 	return a.fileTree.ReadDir(path)
 }
 
+func (a *App) ReadDirFiltered(path string) ([]filetree.FileEntry, error) {
+	return a.fileTree.ReadDirFiltered(path)
+}
+
 func (a *App) ReadFile(path string) (string, error) {
 	return a.fileTree.ReadFile(path)
 }
