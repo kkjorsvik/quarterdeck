@@ -26,6 +26,7 @@ export function FileNode({ entry, depth }: FileNodeProps) {
   const openFile = useEditorStore(s => s.openFile);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const addTab = useLayoutStore(s => s.addTab);
+  const removeTab = useLayoutStore(s => s.removeTab);
   const setActiveTab = useLayoutStore(s => s.setActiveTab);
   const getLeafById = useLayoutStore(s => s.getLeafById);
   const getEditorPaneId = useLayoutStore(s => s.getEditorPaneId);
@@ -75,10 +76,21 @@ export function FileNode({ entry, depth }: FileNodeProps) {
 
       const filename = entry.path.split('/').pop() || entry.path;
       addTab(targetPaneId, { type: 'editor', title: filename, filePath: entry.path });
+
+      // Close any empty editor placeholder tabs (no filePath)
+      const updatedLeaf = getLeafById(targetPaneId);
+      if (updatedLeaf) {
+        for (let i = updatedLeaf.tabs.length - 1; i >= 0; i--) {
+          if (updatedLeaf.tabs[i].type === 'editor' && !updatedLeaf.tabs[i].filePath) {
+            removeTab(targetPaneId, i);
+            break;
+          }
+        }
+      }
     } catch (err) {
       console.error('Failed to read file:', err);
     }
-  }, [entry, openFile, focusedPaneId, addTab, setActiveTab, getLeafById, getEditorPaneId, toggleDir]);
+  }, [entry, openFile, focusedPaneId, addTab, removeTab, setActiveTab, getLeafById, getEditorPaneId, toggleDir]);
 
   return (
     <div>
