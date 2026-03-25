@@ -21,6 +21,10 @@ declare global {
           ResizeTerminal(id: string, cols: number, rows: number): Promise<void>;
           CloseTerminal(id: string): Promise<void>;
           GetGitBranch(projectPath: string): Promise<string>;
+          UpdateProject(id: number, fields: string): Promise<void>;
+          SaveLayout(projectId: number, layoutJson: string): Promise<void>;
+          GetLayout(projectId: number): Promise<string>;
+          GetAllLayouts(): Promise<Array<{ projectId: number; layoutJson: string }>>;
         };
       };
     };
