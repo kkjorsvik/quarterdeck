@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import '../lib/monaco-workers';
 import * as monaco from 'monaco-editor';
 import { initVimMode } from 'monaco-vim';
 
