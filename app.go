@@ -9,6 +9,7 @@ import (
 
 	"github.com/kkjorsvik/quarterdeck/internal/db"
 	"github.com/kkjorsvik/quarterdeck/internal/filetree"
+	"github.com/kkjorsvik/quarterdeck/internal/layout"
 	"github.com/kkjorsvik/quarterdeck/internal/project"
 	ptyPkg "github.com/kkjorsvik/quarterdeck/internal/pty"
 	"github.com/kkjorsvik/quarterdeck/internal/ws"
@@ -18,6 +19,7 @@ type App struct {
 	ctx      context.Context
 	store    *db.Store
 	projects *project.Service
+	layouts  *layout.Service
 	fileTree *filetree.Service
 	ptyMgr   *ptyPkg.Manager
 	wsServer *ws.Server
@@ -41,6 +43,7 @@ func (a *App) startup(ctx context.Context) {
 
 	// Initialize services
 	a.projects = project.NewService(store)
+	a.layouts = layout.NewService(store)
 	a.fileTree = filetree.NewService()
 	a.ptyMgr = ptyPkg.NewManager()
 
@@ -85,6 +88,23 @@ func (a *App) GetProject(id int64) (*project.Project, error) {
 
 func (a *App) DeleteProject(id int64) error {
 	return a.projects.Delete(id)
+}
+
+func (a *App) UpdateProject(id int64, fields project.UpdateFields) error {
+	return a.projects.Update(id, fields)
+}
+
+// Layout methods
+func (a *App) SaveLayout(projectID int64, layoutJSON string) error {
+	return a.layouts.Save(projectID, layoutJSON)
+}
+
+func (a *App) GetLayout(projectID int64) (string, error) {
+	return a.layouts.Get(projectID)
+}
+
+func (a *App) GetAllLayouts() (map[int64]string, error) {
+	return a.layouts.GetAll()
 }
 
 // File tree methods
