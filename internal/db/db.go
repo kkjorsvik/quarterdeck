@@ -47,12 +47,28 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) migrate() error {
+	// Create migration tracking table
+	_, err := s.DB.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+		filename TEXT PRIMARY KEY,
+		applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return fmt.Errorf("create schema_migrations: %w", err)
+	}
+
 	entries, err := migrationsFS.ReadDir("migrations")
 	if err != nil {
 		return fmt.Errorf("read migrations dir: %w", err)
 	}
 
 	for _, entry := range entries {
+		// Check if already applied
+		var count int
+		s.DB.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE filename = ?", entry.Name()).Scan(&count)
+		if count > 0 {
+			continue
+		}
+
 		data, err := migrationsFS.ReadFile("migrations/" + entry.Name())
 		if err != nil {
 			return fmt.Errorf("read migration %s: %w", entry.Name(), err)
@@ -60,6 +76,9 @@ func (s *Store) migrate() error {
 		if _, err := s.DB.Exec(string(data)); err != nil {
 			return fmt.Errorf("execute migration %s: %w", entry.Name(), err)
 		}
+
+		// Mark as applied
+		s.DB.Exec("INSERT INTO schema_migrations (filename) VALUES (?)", entry.Name())
 	}
 
 	return nil

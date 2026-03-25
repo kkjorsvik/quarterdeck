@@ -32,6 +32,22 @@ func TestOpenAndMigrate(t *testing.T) {
 	}
 }
 
+func TestMigrateIdempotent(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	store1, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("first open: %v", err)
+	}
+	store1.Close()
+
+	// Second open should not error
+	store2, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("second open should be idempotent: %v", err)
+	}
+	store2.Close()
+}
+
 func TestOpenCreatesParentDirs(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "sub", "dir", "test.db")

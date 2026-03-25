@@ -73,6 +73,47 @@ func TestGetProject(t *testing.T) {
 	}
 }
 
+func TestUpdateProject(t *testing.T) {
+	store := setupTestDB(t)
+	svc := NewService(store)
+
+	p, _ := svc.Add("original", "/tmp/original")
+
+	err := svc.Update(p.ID, UpdateFields{Name: strPtr("renamed")})
+	if err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+
+	got, _ := svc.Get(p.ID)
+	if got.Name != "renamed" {
+		t.Errorf("expected 'renamed', got %q", got.Name)
+	}
+}
+
+func TestUpdateProjectSortOrder(t *testing.T) {
+	store := setupTestDB(t)
+	svc := NewService(store)
+
+	svc.Add("beta", "/tmp/beta")
+	svc.Add("alpha", "/tmp/alpha")
+
+	projects, _ := svc.List()
+	if projects[0].Name != "alpha" {
+		t.Fatalf("expected alpha first by default, got %q", projects[0].Name)
+	}
+
+	beta, _ := svc.Get(projects[1].ID)
+	svc.Update(beta.ID, UpdateFields{SortOrder: intPtr(-1)})
+
+	projects, _ = svc.List()
+	if projects[0].Name != "beta" {
+		t.Errorf("expected beta first after reorder, got %q", projects[0].Name)
+	}
+}
+
+func strPtr(s string) *string { return &s }
+func intPtr(i int) *int       { return &i }
+
 func TestDeleteProject(t *testing.T) {
 	store := setupTestDB(t)
 	svc := NewService(store)
