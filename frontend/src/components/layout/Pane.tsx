@@ -5,6 +5,7 @@ import { useLayoutStore } from '../../stores/layoutStore';
 import { TerminalPanel } from '../terminal/Terminal';
 import { useProjectStore } from '../../stores/projectStore';
 import { MonacoEditor } from '../editor/MonacoEditor';
+import { ProjectSettings } from '../settings/ProjectSettings';
 
 interface PaneProps {
   node: LeafNode;
@@ -43,6 +44,8 @@ export function Pane({ node }: PaneProps) {
           >
             {tab.type === 'terminal' ? (
               <TerminalPanel workDir={activeProject?.path || '/tmp'} />
+            ) : tab.type === 'settings' && tab.projectId ? (
+              <ProjectSettings projectId={tab.projectId} />
             ) : (
               <MonacoEditor filePath={tab.filePath} />
             )}

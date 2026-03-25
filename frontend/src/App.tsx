@@ -3,6 +3,10 @@ import { Sidebar } from './components/sidebar/Sidebar';
 import { TilingContainer } from './components/layout/TilingContainer';
 import { StatusBar } from './components/layout/StatusBar';
 import { useLayoutStore } from './stores/layoutStore';
+import { useOverlayStore } from './stores/overlayStore';
+import { AddProjectModal } from './components/sidebar/AddProjectModal';
+import { ProjectSwitcher } from './components/overlay/ProjectSwitcher';
+import { FileSearch } from './components/overlay/FileSearch';
 import './App.css';
 
 function App() {
@@ -12,6 +16,7 @@ function App() {
   const removeTab = useLayoutStore(s => s.removeTab);
   const cycleTab = useLayoutStore(s => s.cycleTab);
   const getFocusedLeaf = useLayoutStore(s => s.getFocusedLeaf);
+  const toggleOverlay = useOverlayStore(s => s.toggle);
 
   // Global keyboard shortcuts
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -19,6 +24,13 @@ function App() {
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       cycleTab(focusedPaneId, e.shiftKey ? -1 : 1);
+      return;
+    }
+
+    // Ctrl+P (no shift) — file search
+    if (e.ctrlKey && !e.shiftKey && e.key === 'p') {
+      e.preventDefault();
+      toggleOverlay('fileSearch');
       return;
     }
 
@@ -37,6 +49,14 @@ function App() {
         e.preventDefault();
         splitPane(focusedPaneId, 'horizontal', 'terminal');
         break;
+      case 'P':
+        e.preventDefault();
+        toggleOverlay('projectSwitcher');
+        break;
+      case 'O':
+        e.preventDefault();
+        toggleOverlay('addProject');
+        break;
       case 'W': {
         e.preventDefault();
         const leaf = getFocusedLeaf();
@@ -46,7 +66,7 @@ function App() {
         break;
       }
     }
-  }, [splitPane, addTab, removeTab, cycleTab, focusedPaneId, getFocusedLeaf]);
+  }, [splitPane, addTab, removeTab, cycleTab, focusedPaneId, getFocusedLeaf, toggleOverlay]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -65,6 +85,9 @@ function App() {
         <TilingContainer />
         <StatusBar />
       </div>
+      <AddProjectModal />
+      <ProjectSwitcher />
+      <FileSearch />
     </div>
   );
 }

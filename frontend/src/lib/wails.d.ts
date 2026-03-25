@@ -20,6 +20,7 @@ declare global {
           CreateTerminal(workDir: string, cols: number, rows: number): Promise<string>;
           ResizeTerminal(id: string, cols: number, rows: number): Promise<void>;
           CloseTerminal(id: string): Promise<void>;
+          ListProjectFiles(projectPath: string): Promise<string[]>;
           GetGitBranch(projectPath: string): Promise<string>;
           UpdateProject(id: number, fields: string): Promise<void>;
           SaveLayout(projectId: number, layoutJson: string): Promise<void>;
