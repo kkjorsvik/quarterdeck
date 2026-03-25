@@ -8,6 +8,9 @@ export interface Project {
   devServerUrl: string;
   devServerCommand: string;
   defaultAgentType: string;
+  sortOrder: number;
+  color: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,7 +28,7 @@ export interface SessionInfo {
 }
 
 // Layout types
-export type PaneType = 'terminal' | 'editor';
+export type PaneType = 'terminal' | 'editor' | 'settings';
 export type SplitDirection = 'horizontal' | 'vertical';
 
 export interface PanelTab {
@@ -34,6 +37,7 @@ export interface PanelTab {
   title: string;
   terminalId?: string;
   filePath?: string;
+  projectId?: number;
 }
 
 export interface LeafNode {
@@ -60,4 +64,38 @@ export interface OpenFile {
   content: string;
   language: string;
   modified: boolean;
+}
+
+// Multi-project types
+export interface UpdateFields {
+  name?: string;
+  gitDefaultBranch?: string;
+  devServerUrl?: string;
+  devServerCommand?: string;
+  defaultAgentType?: string;
+  sortOrder?: number;
+  color?: string;
+  notes?: string;
+}
+
+export interface ProjectLayout {
+  projectId: number;
+  tilingTree: LayoutNode;
+  editorTabs: EditorTabSnapshot[];
+  activeEditorTab: string | null;
+  terminalPositions: TerminalPositionSnapshot[];
+}
+
+export interface EditorTabSnapshot {
+  paneId: string;
+  filePath: string;
+  cursorPosition: { line: number; column: number };
+  scrollPosition: number;
+  dirtyContent: string | null;
+}
+
+export interface TerminalPositionSnapshot {
+  sessionId: string;
+  paneId: string;
+  tabIndex: number;
 }
