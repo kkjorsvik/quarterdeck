@@ -4,6 +4,7 @@ import { TilingContainer } from './components/layout/TilingContainer';
 import { StatusBar } from './components/layout/StatusBar';
 import { useLayoutStore } from './stores/layoutStore';
 import { useOverlayStore } from './stores/overlayStore';
+import { useProjectStore } from './stores/projectStore';
 import { AddProjectModal } from './components/sidebar/AddProjectModal';
 import { ProjectSwitcher } from './components/overlay/ProjectSwitcher';
 import { FileSearch } from './components/overlay/FileSearch';
@@ -17,6 +18,27 @@ function App() {
   const cycleTab = useLayoutStore(s => s.cycleTab);
   const getFocusedLeaf = useLayoutStore(s => s.getFocusedLeaf);
   const toggleOverlay = useOverlayStore(s => s.toggle);
+
+  const loadSavedLayouts = useProjectStore(s => s.loadSavedLayouts);
+  const saveCurrentLayout = useProjectStore(s => s.saveCurrentLayout);
+  const persistLayout = useProjectStore(s => s.persistLayout);
+  const activeProjectId = useProjectStore(s => s.activeProjectId);
+
+  // Load saved layouts on startup
+  useEffect(() => {
+    loadSavedLayouts();
+  }, []);
+
+  // Auto-save layout every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (activeProjectId !== null) {
+        saveCurrentLayout();
+        persistLayout(activeProjectId);
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [activeProjectId]);
 
   // Global keyboard shortcuts
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

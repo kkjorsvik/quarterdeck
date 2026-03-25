@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { getProjectColor } from '../../lib/projectColors';
 import type { LayoutNode } from '../../lib/types';
 
 function countTerminals(node: LayoutNode): number {
@@ -26,6 +27,10 @@ export function StatusBar() {
     }
   }, [activeProject?.path]);
 
+  const projectColor = activeProject
+    ? getProjectColor(activeProject.sortOrder, activeProject.color || null)
+    : undefined;
+
   const termCount = countTerminals(root);
   const activeTab = focusedLeaf?.tabs[focusedLeaf.activeTabIndex];
   const currentFile = activeTab?.type === 'editor' ? activeTab.filePath?.split('/').pop() : null;
@@ -44,7 +49,7 @@ export function StatusBar() {
       flexShrink: 0,
     }}>
       {activeProject && (
-        <span style={{ color: 'var(--text-primary)' }}>{activeProject.name}</span>
+        <span style={{ color: projectColor || 'var(--text-primary)' }}>{activeProject.name}</span>
       )}
       {branch && (
         <span>⎇ {branch}</span>

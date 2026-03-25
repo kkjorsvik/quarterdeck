@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore';
@@ -11,6 +11,7 @@ export function Sidebar() {
   const activeProjectId = useProjectStore(s => s.activeProjectId);
   const loadProjects = useProjectStore(s => s.loadProjects);
   const switchProject = useProjectStore(s => s.switchProject);
+  const updateProject = useProjectStore(s => s.updateProject);
   const deleteProject = useProjectStore(s => s.deleteProject);
   const activeProject = useProjectStore(s => s.getActiveProject());
   const projectBranches = useProjectStore(s => s.projectBranches);
@@ -46,6 +47,39 @@ export function Sidebar() {
   const handleSettings = useCallback((_id: number) => {
     // TODO: open project settings panel
   }, []);
+
+  // Drag-to-reorder state and handlers
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+
+  const handleDragStart = useCallback((e: React.DragEvent, project: { id: number }) => {
+    setDraggedId(project.id);
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, target: { id: number }) => {
+    e.preventDefault();
+    if (draggedId === null || draggedId === target.id) return;
+
+    const projectsCopy = [...projects];
+    const dragIdx = projectsCopy.findIndex(p => p.id === draggedId);
+    const dropIdx = projectsCopy.findIndex(p => p.id === target.id);
+    const [dragged] = projectsCopy.splice(dragIdx, 1);
+    projectsCopy.splice(dropIdx, 0, dragged);
+
+    for (let i = 0; i < projectsCopy.length; i++) {
+      if (projectsCopy[i].sortOrder !== i) {
+        await updateProject(projectsCopy[i].id, { sortOrder: i });
+      }
+    }
+
+    setDraggedId(null);
+    await loadProjects();
+  }, [draggedId, projects, updateProject, loadProjects]);
 
   return (
     <div style={{
@@ -97,6 +131,9 @@ export function Sidebar() {
               onSwitch={switchProject}
               onRemove={handleRemove}
               onSettings={handleSettings}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             />
           ))}
         </div>
