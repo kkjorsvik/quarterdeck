@@ -20,6 +20,7 @@ declare global {
           CreateTerminal(workDir: string, cols: number, rows: number): Promise<string>;
           ResizeTerminal(id: string, cols: number, rows: number): Promise<void>;
           CloseTerminal(id: string): Promise<void>;
+          GetGitBranch(projectPath: string): Promise<string>;
         };
       };
     };

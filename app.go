@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/kkjorsvik/quarterdeck/internal/db"
 	"github.com/kkjorsvik/quarterdeck/internal/filetree"
@@ -117,4 +119,13 @@ func (a *App) ResizeTerminal(id string, cols, rows int) error {
 
 func (a *App) CloseTerminal(id string) error {
 	return a.ptyMgr.Close(id)
+}
+
+func (a *App) GetGitBranch(projectPath string) string {
+	cmd := exec.Command("git", "-C", projectPath, "rev-parse", "--abbrev-ref", "HEAD")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
