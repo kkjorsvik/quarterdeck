@@ -20,6 +20,7 @@ interface LayoutState {
   getLeafById: (paneId: string) => LeafNode | undefined;
   getFocusedLeaf: () => LeafNode | undefined;
   getEditorPaneId: () => string | undefined;
+  setRoot: (root: LayoutNode) => void;
   createProjectLayout: () => void;
 }
 
@@ -64,6 +65,27 @@ function removePane(node: LayoutNode, targetId: string): LayoutNode | null {
 function findFirstLeaf(node: LayoutNode): string {
   if (node.type === 'leaf') return node.id;
   return findFirstLeaf(node.children[0]);
+}
+
+function maxIdInTree(node: LayoutNode): number {
+  const numId = (id: string) => {
+    const match = id.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
+  if (node.type === 'leaf') {
+    let max = numId(node.id);
+    for (const tab of node.tabs) {
+      max = Math.max(max, numId(tab.id));
+    }
+    return max;
+  }
+
+  return Math.max(
+    numId(node.id),
+    maxIdInTree(node.children[0]),
+    maxIdInTree(node.children[1])
+  );
 }
 
 // Find the first leaf that has at least one editor tab, or the first leaf with no terminal-only tabs
@@ -189,6 +211,11 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
     const editorLeaf = findEditorLeaf(get().root);
     return editorLeaf?.id;
   },
+
+  setRoot: (root) => set(() => {
+    nextId = maxIdInTree(root) + 1;
+    return { root, focusedPaneId: findFirstLeaf(root) };
+  }),
 
   createProjectLayout: () => set(() => {
     const editorPaneId = genId();

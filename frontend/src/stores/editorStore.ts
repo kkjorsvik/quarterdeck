@@ -25,6 +25,7 @@ interface EditorState {
   setActiveFile: (index: number) => void;
   updateContent: (index: number, content: string) => void;
   markSaved: (index: number) => void;
+  replaceAll: (files: OpenFile[], activeIndex: number) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -81,5 +82,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       newFiles[index] = { ...newFiles[index], modified: false };
     }
     return { openFiles: newFiles };
+  }),
+
+  replaceAll: (files, activeIndex) => set({
+    openFiles: files,
+    activeFileIndex: activeIndex,
   }),
 }));
