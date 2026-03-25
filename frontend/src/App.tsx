@@ -1,28 +1,58 @@
-import {useState} from 'react';
-import logo from './assets/images/logo-universal.png';
+import React, { useEffect, useCallback } from 'react';
+import { Sidebar } from './components/sidebar/Sidebar';
+import { TilingContainer } from './components/layout/TilingContainer';
+import { useLayoutStore } from './stores/layoutStore';
 import './App.css';
-import {Greet} from "../wailsjs/go/main/App";
 
 function App() {
-    const [resultText, setResultText] = useState("Please enter your name below 👇");
-    const [name, setName] = useState('');
-    const updateName = (e: any) => setName(e.target.value);
-    const updateResultText = (result: string) => setResultText(result);
+  const splitPane = useLayoutStore(s => s.splitPane);
+  const closePane = useLayoutStore(s => s.closePane);
+  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
 
-    function greet() {
-        Greet(name).then(updateResultText);
+  // Global keyboard shortcuts
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!e.ctrlKey || !e.shiftKey) return;
+
+    switch (e.key) {
+      case 'T':
+        // New terminal (split current pane horizontally)
+        e.preventDefault();
+        splitPane(focusedPaneId, 'horizontal', 'terminal');
+        break;
+      case 'V':
+        // Split vertical
+        e.preventDefault();
+        splitPane(focusedPaneId, 'vertical', 'terminal');
+        break;
+      case 'H':
+        // Split horizontal
+        e.preventDefault();
+        splitPane(focusedPaneId, 'horizontal', 'terminal');
+        break;
+      case 'W':
+        // Close focused pane
+        e.preventDefault();
+        closePane(focusedPaneId);
+        break;
     }
+  }, [splitPane, closePane, focusedPaneId]);
 
-    return (
-        <div id="App">
-            <img src={logo} id="logo" alt="logo"/>
-            <div id="result" className="result">{resultText}</div>
-            <div id="input" className="input-box">
-                <input id="name" className="input" onChange={updateName} autoComplete="off" name="input" type="text"/>
-                <button className="btn" onClick={greet}>Greet</button>
-            </div>
-        </div>
-    )
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      width: '100vw',
+      height: '100vh',
+      overflow: 'hidden',
+    }}>
+      <Sidebar />
+      <TilingContainer />
+    </div>
+  );
 }
 
-export default App
+export default App;

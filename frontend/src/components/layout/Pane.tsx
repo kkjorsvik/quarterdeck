@@ -4,6 +4,7 @@ import { PaneHeader } from './PaneHeader';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { TerminalPanel } from '../terminal/Terminal';
 import { useProjectStore } from '../../stores/projectStore';
+import { MonacoEditor } from '../editor/MonacoEditor';
 
 interface PaneProps {
   node: LeafNode;
@@ -31,19 +32,10 @@ export function Pane({ node }: PaneProps) {
     >
       <PaneHeader paneId={node.id} paneType={node.paneType} />
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        {node.paneType === 'terminal' ? (
-          <TerminalPanel workDir={activeProject?.path || '/tmp'} />
+        {node.paneType === 'editor' ? (
+          <MonacoEditor />
         ) : (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            color: 'var(--text-secondary)',
-            fontSize: '14px',
-          }}>
-            [ Editor: {node.filePath || 'none'} ]
-          </div>
+          <TerminalPanel workDir={activeProject?.path || '/tmp'} />
         )}
       </div>
     </div>
