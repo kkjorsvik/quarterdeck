@@ -28,6 +28,7 @@ export function FileNode({ entry, depth }: FileNodeProps) {
   const addTab = useLayoutStore(s => s.addTab);
   const setActiveTab = useLayoutStore(s => s.setActiveTab);
   const getLeafById = useLayoutStore(s => s.getLeafById);
+  const getEditorPaneId = useLayoutStore(s => s.getEditorPaneId);
 
   const toggleDir = useCallback(async () => {
     if (!entry.isDir) return;
@@ -59,22 +60,25 @@ export function FileNode({ entry, depth }: FileNodeProps) {
       const content = await window.go.main.App.ReadFile(entry.path);
       openFile(entry.path, content);
 
-      // Check if file is already open in a tab
-      const leaf = getLeafById(focusedPaneId);
+      // Target the editor pane if one exists, otherwise fall back to focused pane
+      const targetPaneId = getEditorPaneId() || focusedPaneId;
+
+      // Check if file is already open in a tab in the target pane
+      const leaf = getLeafById(targetPaneId);
       if (leaf) {
         const existingIdx = leaf.tabs.findIndex(t => t.filePath === entry.path);
         if (existingIdx >= 0) {
-          setActiveTab(focusedPaneId, existingIdx);
+          setActiveTab(targetPaneId, existingIdx);
           return;
         }
       }
 
       const filename = entry.path.split('/').pop() || entry.path;
-      addTab(focusedPaneId, { type: 'editor', title: filename, filePath: entry.path });
+      addTab(targetPaneId, { type: 'editor', title: filename, filePath: entry.path });
     } catch (err) {
       console.error('Failed to read file:', err);
     }
-  }, [entry, openFile, focusedPaneId, addTab, setActiveTab, getLeafById, toggleDir]);
+  }, [entry, openFile, focusedPaneId, addTab, setActiveTab, getLeafById, getEditorPaneId, toggleDir]);
 
   return (
     <div>
