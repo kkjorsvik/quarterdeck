@@ -1,33 +1,51 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
+import { useOverlayStore } from '../../stores/overlayStore';
+import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore';
 import { FileTree } from '../filetree/FileTree';
+import { AddProjectModal } from './AddProjectModal';
+import { ProjectEntry } from './ProjectEntry';
 
 export function Sidebar() {
   const projects = useProjectStore(s => s.projects);
   const activeProjectId = useProjectStore(s => s.activeProjectId);
   const loadProjects = useProjectStore(s => s.loadProjects);
-  const addProject = useProjectStore(s => s.addProject);
-  const setActiveProject = useProjectStore(s => s.setActiveProject);
+  const switchProject = useProjectStore(s => s.switchProject);
+  const deleteProject = useProjectStore(s => s.deleteProject);
   const activeProject = useProjectStore(s => s.getActiveProject());
+  const projectBranches = useProjectStore(s => s.projectBranches);
+  const pollBranches = useProjectStore(s => s.pollBranches);
+  const openOverlay = useOverlayStore(s => s.open);
+
+  // Force subscription to background terminal store for reactivity
+  useBackgroundTerminalStore(s => s.terminals);
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  const handleAddProject = async () => {
-    try {
-      // OpenDirectoryDialog is not available in the generated Wails runtime;
-      // fall back to a prompt so the user can type an absolute path.
-      const path = window.prompt('Enter project directory path:');
-      if (path && path.trim()) {
-        const trimmed = path.trim();
-        const name = trimmed.split('/').pop() || trimmed;
-        await addProject(name, trimmed);
-      }
-    } catch (err) {
-      console.error('Failed to add project:', err);
+  // Poll git branches on mount and every 15 seconds
+  useEffect(() => {
+    pollBranches();
+    const interval = setInterval(pollBranches, 15000);
+    return () => clearInterval(interval);
+  }, [pollBranches]);
+
+  const handleAddProject = useCallback(() => {
+    openOverlay('addProject');
+  }, [openOverlay]);
+
+  const handleRemove = useCallback((id: number) => {
+    const project = projects.find(p => p.id === id);
+    const name = project?.name || 'this project';
+    if (window.confirm(`Remove "${name}" from Quarterdeck? The files on disk will not be deleted.`)) {
+      deleteProject(id);
     }
-  };
+  }, [projects, deleteProject]);
+
+  const handleSettings = useCallback((_id: number) => {
+    // TODO: open project settings panel
+  }, []);
 
   return (
     <div style={{
@@ -71,31 +89,43 @@ export function Sidebar() {
       {projects.length > 0 && (
         <div style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           {projects.map(project => (
-            <div
+            <ProjectEntry
               key={project.id}
-              onClick={() => setActiveProject(project.id)}
-              style={{
-                padding: '6px 12px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                color: project.id === activeProjectId ? 'var(--text-primary)' : 'var(--text-secondary)',
-                background: project.id === activeProjectId ? 'var(--bg-active)' : 'transparent',
-              }}
-            >
-              {project.name}
-            </div>
+              project={project}
+              isActive={project.id === activeProjectId}
+              branch={projectBranches.get(project.id)}
+              onSwitch={switchProject}
+              onRemove={handleRemove}
+              onSettings={handleSettings}
+            />
           ))}
         </div>
       )}
 
-      {/* File tree */}
+      {/* File tree label + tree */}
       {activeProject ? (
-        <FileTree rootPath={activeProject.path} />
+        <>
+          <div style={{
+            padding: '6px 12px',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            borderBottom: '1px solid var(--border)',
+            flexShrink: 0,
+          }}>
+            FILES — {activeProject.name}
+          </div>
+          <FileTree rootPath={activeProject.path} />
+        </>
       ) : (
         <div style={{ padding: '16px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
           {projects.length === 0 ? 'Add a project to get started' : 'Select a project'}
         </div>
       )}
+
+      <AddProjectModal />
     </div>
   );
 }
