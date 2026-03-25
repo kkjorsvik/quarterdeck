@@ -2,6 +2,8 @@ import React from 'react';
 import type { LeafNode } from '../../lib/types';
 import { PaneHeader } from './PaneHeader';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { TerminalPanel } from '../terminal/Terminal';
+import { useProjectStore } from '../../stores/projectStore';
 
 interface PaneProps {
   node: LeafNode;
@@ -11,6 +13,7 @@ export function Pane({ node }: PaneProps) {
   const setFocusedPane = useLayoutStore(s => s.setFocusedPane);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const isFocused = focusedPaneId === node.id;
+  const activeProject = useProjectStore(s => s.getActiveProject());
 
   return (
     <div
@@ -28,17 +31,20 @@ export function Pane({ node }: PaneProps) {
     >
       <PaneHeader paneId={node.id} paneType={node.paneType} />
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        {/* Placeholder — Terminal and Editor components plugged in during Tasks 12-13 */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          color: 'var(--text-secondary)',
-          fontSize: '14px',
-        }}>
-          {node.paneType === 'terminal' ? '[ Terminal ]' : `[ Editor: ${node.filePath || 'none'} ]`}
-        </div>
+        {node.paneType === 'terminal' ? (
+          <TerminalPanel workDir={activeProject?.path || '/tmp'} />
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: 'var(--text-secondary)',
+            fontSize: '14px',
+          }}>
+            [ Editor: {node.filePath || 'none'} ]
+          </div>
+        )}
       </div>
     </div>
   );
