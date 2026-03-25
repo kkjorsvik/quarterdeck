@@ -5,7 +5,10 @@ import { WebglAddon } from '@xterm/addon-webgl';
 
 interface UseTerminalOptions {
   workDir: string;
+  existingWs?: WebSocket;
+  existingBuffer?: Uint8Array[];
   onReady?: () => void;
+  onSessionId?: (id: string) => void;
 }
 
 export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>, options: UseTerminalOptions) {
@@ -14,6 +17,7 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
   const socketRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const detachedRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -73,12 +77,57 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
 
     // Connect to backend
     const connect = async () => {
+      // Reattach path: reuse existing WebSocket from background store
+      if (options.existingWs) {
+        const socket = options.existingWs;
+        socketRef.current = socket;
+
+        // Feed buffered output first
+        if (options.existingBuffer) {
+          for (const chunk of options.existingBuffer) {
+            term.write(chunk);
+          }
+        }
+
+        // Rewire WS handlers to xterm
+        socket.onmessage = (event) => {
+          if (event.data instanceof ArrayBuffer) {
+            term.write(new Uint8Array(event.data));
+          } else if (typeof event.data === 'string') {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'exited') {
+                term.write(`\r\n\x1b[90m[Process exited with code ${msg.exitCode}]\x1b[0m\r\n`);
+              }
+            } catch { /* ignore */ }
+          }
+        };
+
+        term.onData((data) => {
+          if (socket.readyState === WebSocket.OPEN) {
+            const encoder = new TextEncoder();
+            socket.send(encoder.encode(data));
+          }
+        });
+
+        term.onResize(({ cols, rows }) => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'resize', cols, rows }));
+          }
+        });
+
+        term.focus();
+        options.onReady?.();
+        return; // Skip normal connect flow
+      }
+
       try {
         const port = await window.go.main.App.GetWSPort();
         const cols = term.cols;
         const rows = term.rows;
         const id = await window.go.main.App.CreateTerminal(options.workDir || '/tmp', cols, rows);
         sessionIdRef.current = id;
+        options.onSessionId?.(id);
 
         const socket = new WebSocket(`ws://localhost:${port}/ws/pty/${id}`);
         socket.binaryType = 'arraybuffer';
@@ -132,12 +181,15 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
     // Cleanup
     return () => {
       observer.disconnect();
-      if (socketRef.current) {
-        socketRef.current.close();
+      if (!detachedRef.current) {
+        if (socketRef.current) {
+          socketRef.current.close();
+        }
+        if (sessionIdRef.current) {
+          window.go.main.App.CloseTerminal(sessionIdRef.current).catch(() => {});
+        }
       }
-      if (sessionIdRef.current) {
-        window.go.main.App.CloseTerminal(sessionIdRef.current).catch(() => {});
-      }
+      // Always dispose xterm.js instance (DOM cleanup)
       term.dispose();
     };
   }, []); // Mount once
@@ -145,5 +197,8 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
   return {
     terminal: terminalRef,
     fit: useCallback(() => fitAddonRef.current?.fit(), []),
+    sessionId: sessionIdRef,
+    socket: socketRef,
+    detach: useCallback(() => { detachedRef.current = true; }, []),
   };
 }
