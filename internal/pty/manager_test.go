@@ -101,3 +101,26 @@ func TestReadFromSession(t *testing.T) {
 	t.Logf("output so far: %q", output)
 	t.Fatal("did not see expected output 'hello_pty_test'")
 }
+
+func TestSessionExitDetection(t *testing.T) {
+	mgr := NewManager()
+	defer mgr.CloseAll()
+
+	id, err := mgr.Create("/bin/sh", "/tmp", 80, 24)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	sess, _ := mgr.Get(id)
+	sess.Write([]byte("exit 42\n"))
+
+	select {
+	case <-sess.Done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for session to exit")
+	}
+
+	if sess.ExitCode != 42 {
+		t.Errorf("expected exit code 42, got %d", sess.ExitCode)
+	}
+}

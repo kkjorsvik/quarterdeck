@@ -91,6 +91,15 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         socket.onmessage = (event) => {
           if (event.data instanceof ArrayBuffer) {
             term.write(new Uint8Array(event.data));
+          } else if (typeof event.data === 'string') {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'exited') {
+                term.write(`\r\n\x1b[90m[Process exited with code ${msg.exitCode}]\x1b[0m\r\n`);
+              }
+            } catch {
+              // ignore non-JSON text
+            }
           }
         };
 

@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	cpty "github.com/creack/pty"
 )
 
 type Session struct {
-	ID   string
-	Cmd  *exec.Cmd
-	File *os.File
+	ID       string
+	Cmd      *exec.Cmd
+	File     *os.File
+	Done     chan struct{}
+	ExitCode int
 }
 
 func newSession(id, shell, workDir string, cols, rows uint16) (*Session, error) {
@@ -27,11 +30,24 @@ func newSession(id, shell, workDir string, cols, rows uint16) (*Session, error) 
 		return nil, fmt.Errorf("start pty: %w", err)
 	}
 
-	return &Session{
+	s := &Session{
 		ID:   id,
 		Cmd:  cmd,
 		File: f,
-	}, nil
+		Done: make(chan struct{}),
+	}
+
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				s.ExitCode = exitErr.ExitCode()
+			}
+		}
+		close(s.Done)
+	}()
+
+	return s, nil
 }
 
 func (s *Session) Read(buf []byte) (int, error) {
@@ -51,6 +67,9 @@ func (s *Session) Close() error {
 	if s.Cmd.Process != nil {
 		s.Cmd.Process.Kill()
 	}
-	s.Cmd.Wait()
+	select {
+	case <-s.Done:
+	case <-time.After(2 * time.Second):
+	}
 	return nil
 }
