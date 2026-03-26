@@ -64,7 +64,9 @@ func (s *Store) migrate() error {
 	for _, entry := range entries {
 		// Check if already applied
 		var count int
-		s.DB.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE filename = ?", entry.Name()).Scan(&count)
+		if err := s.DB.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE filename = ?", entry.Name()).Scan(&count); err != nil {
+			return fmt.Errorf("check migration %s: %w", entry.Name(), err)
+		}
 		if count > 0 {
 			continue
 		}
@@ -78,7 +80,9 @@ func (s *Store) migrate() error {
 		}
 
 		// Mark as applied
-		s.DB.Exec("INSERT INTO schema_migrations (filename) VALUES (?)", entry.Name())
+		if _, err := s.DB.Exec("INSERT INTO schema_migrations (filename) VALUES (?)", entry.Name()); err != nil {
+			return fmt.Errorf("mark migration %s as applied: %w", entry.Name(), err)
+		}
 	}
 
 	return nil
