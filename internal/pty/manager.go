@@ -23,10 +23,10 @@ func NewManager() *Manager {
 	}
 }
 
-func (m *Manager) Create(shell, workDir string, cols, rows uint16) (string, error) {
+func (m *Manager) Create(command string, args []string, workDir string, cols, rows uint16) (string, error) {
 	id := uuid.New().String()
 
-	sess, err := newSession(id, shell, workDir, cols, rows)
+	sess, err := newSession(id, command, args, workDir, cols, rows)
 	if err != nil {
 		return "", fmt.Errorf("create session: %w", err)
 	}

@@ -17,8 +17,8 @@ type Session struct {
 	ExitCode int
 }
 
-func newSession(id, shell, workDir string, cols, rows uint16) (*Session, error) {
-	cmd := exec.Command(shell)
+func newSession(id, command string, args []string, workDir string, cols, rows uint16) (*Session, error) {
+	cmd := exec.Command(command, args...)
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 

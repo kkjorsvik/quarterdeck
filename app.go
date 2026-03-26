@@ -130,7 +130,7 @@ func (a *App) CreateTerminal(workDir string, cols, rows int) (string, error) {
 	if shell == "" {
 		shell = "/bin/sh"
 	}
-	return a.ptyMgr.Create(shell, workDir, uint16(cols), uint16(rows))
+	return a.ptyMgr.Create(shell, nil, workDir, uint16(cols), uint16(rows))
 }
 
 func (a *App) ResizeTerminal(id string, cols, rows int) error {

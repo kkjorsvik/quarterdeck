@@ -16,7 +16,7 @@ func TestCreateAndCloseSession(t *testing.T) {
 		shell = "/bin/sh"
 	}
 
-	id, err := mgr.Create(shell, "/tmp", 80, 24)
+	id, err := mgr.Create(shell, nil, "/tmp", 80, 24)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestResizeSession(t *testing.T) {
 		shell = "/bin/sh"
 	}
 
-	id, err := mgr.Create(shell, "/tmp", 80, 24)
+	id, err := mgr.Create(shell, nil, "/tmp", 80, 24)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestReadFromSession(t *testing.T) {
 	mgr := NewManager()
 	defer mgr.CloseAll()
 
-	id, err := mgr.Create("/bin/sh", "/tmp", 80, 24)
+	id, err := mgr.Create("/bin/sh", nil, "/tmp", 80, 24)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestSessionExitDetection(t *testing.T) {
 	mgr := NewManager()
 	defer mgr.CloseAll()
 
-	id, err := mgr.Create("/bin/sh", "/tmp", 80, 24)
+	id, err := mgr.Create("/bin/sh", nil, "/tmp", 80, 24)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
