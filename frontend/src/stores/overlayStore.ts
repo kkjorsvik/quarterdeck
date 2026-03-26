@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type OverlayType = 'none' | 'addProject' | 'projectSwitcher' | 'fileSearch';
+type OverlayType = 'none' | 'addProject' | 'projectSwitcher' | 'fileSearch' | 'spawnAgent';
 
 interface OverlayState {
   active: OverlayType;
