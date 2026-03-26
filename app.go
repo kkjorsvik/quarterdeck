@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	agentPkg "github.com/kkjorsvik/quarterdeck/internal/agent"
 	"github.com/kkjorsvik/quarterdeck/internal/db"
 	"github.com/kkjorsvik/quarterdeck/internal/filetree"
 	"github.com/kkjorsvik/quarterdeck/internal/layout"
@@ -22,6 +23,7 @@ type App struct {
 	layouts  *layout.Service
 	fileTree *filetree.Service
 	ptyMgr   *ptyPkg.Manager
+	agentMgr *agentPkg.Manager
 	wsServer *ws.Server
 }
 
@@ -47,8 +49,15 @@ func (a *App) startup(ctx context.Context) {
 	a.fileTree = filetree.NewService()
 	a.ptyMgr = ptyPkg.NewManager()
 
+	// Initialize agent manager
+	a.agentMgr = agentPkg.NewManager(a.ptyMgr, a.store, func(data []byte) {
+		if a.wsServer != nil {
+			a.wsServer.EventHub().Broadcast(data)
+		}
+	})
+
 	// Start WebSocket server
-	wsSrv, err := ws.NewServer(a.ptyMgr)
+	wsSrv, err := ws.NewServer(a.ptyMgr, a.agentMgr)
 	if err != nil {
 		panic("failed to start ws server: " + err.Error())
 	}
@@ -58,6 +67,9 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(ctx context.Context) {
 	if a.wsServer != nil {
 		a.wsServer.Close()
+	}
+	if a.agentMgr != nil {
+		a.agentMgr.Shutdown()
 	}
 	if a.ptyMgr != nil {
 		a.ptyMgr.CloseAll()
@@ -87,6 +99,7 @@ func (a *App) GetProject(id int64) (*project.Project, error) {
 }
 
 func (a *App) DeleteProject(id int64) error {
+	a.agentMgr.StopByProject(id)
 	return a.projects.Delete(id)
 }
 
@@ -162,4 +175,28 @@ func (a *App) GetGitBranch(projectPath string) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// Agent methods
+func (a *App) SpawnAgent(projectID int64, agentType, taskDesc, workDir, customCmd string) (*agentPkg.SpawnResult, error) {
+	agent, err := a.agentMgr.Spawn(projectID, agentType, taskDesc, workDir, customCmd)
+	if err != nil {
+		return nil, err
+	}
+	return &agentPkg.SpawnResult{
+		AgentID:      agent.ID,
+		PTYSessionID: agent.PTYSessionID,
+	}, nil
+}
+
+func (a *App) StopAgent(agentID string) error {
+	return a.agentMgr.Stop(agentID)
+}
+
+func (a *App) ListAgents() []*agentPkg.Agent {
+	return a.agentMgr.List()
+}
+
+func (a *App) ListProjectAgents(projectID int64) []*agentPkg.Agent {
+	return a.agentMgr.ListByProject(projectID)
 }

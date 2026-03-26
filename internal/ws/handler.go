@@ -27,7 +27,7 @@ type exitedMessage struct {
 	ExitCode int    `json:"exitCode"`
 }
 
-func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager) http.HandlerFunc {
+func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/ws/pty/"), "/")
 		if len(parts) == 0 || parts[0] == "" {
@@ -64,6 +64,9 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager) http.HandlerFunc {
 				}
 				if err := conn.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
 					return
+				}
+				if detectorLookup != nil {
+					detectorLookup.FeedDetector(sessionID, buf[:n])
 				}
 			}
 			// Wait for process exit to get exit code
