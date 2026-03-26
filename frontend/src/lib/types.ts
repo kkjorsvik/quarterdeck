@@ -99,3 +99,23 @@ export interface TerminalPositionSnapshot {
   paneId: string;
   tabIndex: number;
 }
+
+// Agent types
+export type AgentStatusType = 'starting' | 'working' | 'needs_input' | 'done' | 'error';
+
+export interface AgentState {
+  id: string;
+  projectId: number;
+  type: string;
+  displayName: string;
+  taskDescription: string;
+  status: AgentStatusType;
+  ptySessionId: string;
+  startedAt: string;
+  exitCode: number | null;
+}
+
+export interface SpawnResult {
+  agentId: string;
+  ptySessionId: string;
+}
