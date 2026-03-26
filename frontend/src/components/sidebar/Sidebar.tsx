@@ -5,6 +5,7 @@ import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore
 import { FileTree } from '../filetree/FileTree';
 import { AddProjectModal } from './AddProjectModal';
 import { ProjectEntry } from './ProjectEntry';
+import { AgentSection } from './AgentSection';
 
 export function Sidebar() {
   const projects = useProjectStore(s => s.projects);
@@ -138,6 +139,9 @@ export function Sidebar() {
           ))}
         </div>
       )}
+
+      {/* Agent section */}
+      <AgentSection />
 
       {/* File tree label + tree */}
       {activeProject ? (

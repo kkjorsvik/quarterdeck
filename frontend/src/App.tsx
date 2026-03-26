@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { TilingContainer } from './components/layout/TilingContainer';
 import { StatusBar } from './components/layout/StatusBar';
@@ -8,6 +8,8 @@ import { useProjectStore } from './stores/projectStore';
 import { AddProjectModal } from './components/sidebar/AddProjectModal';
 import { ProjectSwitcher } from './components/overlay/ProjectSwitcher';
 import { FileSearch } from './components/overlay/FileSearch';
+import { SpawnAgentModal } from './components/sidebar/SpawnAgentModal';
+import { useAgentEvents } from './hooks/useAgentEvents';
 import './App.css';
 
 function App() {
@@ -19,6 +21,9 @@ function App() {
   const getFocusedLeaf = useLayoutStore(s => s.getFocusedLeaf);
   const toggleOverlay = useOverlayStore(s => s.toggle);
 
+  const [wsPort, setWsPort] = useState<number | null>(null);
+  useAgentEvents(wsPort);
+
   const loadSavedLayouts = useProjectStore(s => s.loadSavedLayouts);
   const saveCurrentLayout = useProjectStore(s => s.saveCurrentLayout);
   const persistLayout = useProjectStore(s => s.persistLayout);
@@ -27,6 +32,11 @@ function App() {
   // Load saved layouts on startup
   useEffect(() => {
     loadSavedLayouts();
+  }, []);
+
+  // Load WS port for agent event stream
+  useEffect(() => {
+    (window as any).go.main.App.GetWSPort().then((port: number) => setWsPort(port)).catch(() => {});
   }, []);
 
   // Auto-save layout every 60 seconds
@@ -71,6 +81,10 @@ function App() {
         e.preventDefault();
         splitPane(focusedPaneId, 'horizontal', 'terminal');
         break;
+      case 'A':
+        e.preventDefault();
+        toggleOverlay('spawnAgent');
+        break;
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');
@@ -110,6 +124,7 @@ function App() {
       <AddProjectModal />
       <ProjectSwitcher />
       <FileSearch />
+      <SpawnAgentModal />
     </div>
   );
 }
