@@ -11,11 +11,17 @@ export function CreateTerminal(arg1:string,arg2:number,arg3:number):Promise<stri
 
 export function DeleteProject(arg1:number):Promise<void>;
 
+export function GetAllLayouts():Promise<Record<number, string>>;
+
 export function GetGitBranch(arg1:string):Promise<string>;
+
+export function GetLayout(arg1:number):Promise<string>;
 
 export function GetProject(arg1:number):Promise<project.Project>;
 
 export function GetWSPort():Promise<number>;
+
+export function ListProjectFiles(arg1:string):Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<project.Project>>;
 
@@ -26,5 +32,9 @@ export function ReadDirFiltered(arg1:string):Promise<Array<filetree.FileEntry>>;
 export function ReadFile(arg1:string):Promise<string>;
 
 export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
+
+export function SaveLayout(arg1:number,arg2:string):Promise<void>;
+
+export function UpdateProject(arg1:number,arg2:project.UpdateFields):Promise<void>;
 
 export function WriteFile(arg1:string,arg2:string):Promise<void>;

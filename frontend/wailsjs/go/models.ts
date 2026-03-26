@@ -31,6 +31,9 @@ export namespace project {
 	    devServerUrl: string;
 	    devServerCommand: string;
 	    defaultAgentType: string;
+	    sortOrder: number;
+	    color: string;
+	    notes: string;
 	    createdAt: string;
 	    updatedAt: string;
 	
@@ -47,8 +50,39 @@ export namespace project {
 	        this.devServerUrl = source["devServerUrl"];
 	        this.devServerCommand = source["devServerCommand"];
 	        this.defaultAgentType = source["defaultAgentType"];
+	        this.sortOrder = source["sortOrder"];
+	        this.color = source["color"];
+	        this.notes = source["notes"];
 	        this.createdAt = source["createdAt"];
 	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class UpdateFields {
+	    Name?: string;
+	    Path?: string;
+	    GitDefaultBranch?: string;
+	    DevServerURL?: string;
+	    DevServerCommand?: string;
+	    DefaultAgentType?: string;
+	    SortOrder?: number;
+	    Color?: string;
+	    Notes?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateFields(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Path = source["Path"];
+	        this.GitDefaultBranch = source["GitDefaultBranch"];
+	        this.DevServerURL = source["DevServerURL"];
+	        this.DevServerCommand = source["DevServerCommand"];
+	        this.DefaultAgentType = source["DefaultAgentType"];
+	        this.SortOrder = source["SortOrder"];
+	        this.Color = source["Color"];
+	        this.Notes = source["Notes"];
 	    }
 	}
 

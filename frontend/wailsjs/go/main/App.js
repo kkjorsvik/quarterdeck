@@ -18,8 +18,16 @@ export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
 
+export function GetAllLayouts() {
+  return window['go']['main']['App']['GetAllLayouts']();
+}
+
 export function GetGitBranch(arg1) {
   return window['go']['main']['App']['GetGitBranch'](arg1);
+}
+
+export function GetLayout(arg1) {
+  return window['go']['main']['App']['GetLayout'](arg1);
 }
 
 export function GetProject(arg1) {
@@ -28,6 +36,10 @@ export function GetProject(arg1) {
 
 export function GetWSPort() {
   return window['go']['main']['App']['GetWSPort']();
+}
+
+export function ListProjectFiles(arg1) {
+  return window['go']['main']['App']['ListProjectFiles'](arg1);
 }
 
 export function ListProjects() {
@@ -48,6 +60,14 @@ export function ReadFile(arg1) {
 
 export function ResizeTerminal(arg1, arg2, arg3) {
   return window['go']['main']['App']['ResizeTerminal'](arg1, arg2, arg3);
+}
+
+export function SaveLayout(arg1, arg2) {
+  return window['go']['main']['App']['SaveLayout'](arg1, arg2);
+}
+
+export function UpdateProject(arg1, arg2) {
+  return window['go']['main']['App']['UpdateProject'](arg1, arg2);
 }
 
 export function WriteFile(arg1, arg2) {
