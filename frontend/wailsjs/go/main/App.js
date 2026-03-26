@@ -38,6 +38,14 @@ export function GetWSPort() {
   return window['go']['main']['App']['GetWSPort']();
 }
 
+export function ListAgents() {
+  return window['go']['main']['App']['ListAgents']();
+}
+
+export function ListProjectAgents(arg1) {
+  return window['go']['main']['App']['ListProjectAgents'](arg1);
+}
+
 export function ListProjectFiles(arg1) {
   return window['go']['main']['App']['ListProjectFiles'](arg1);
 }
@@ -64,6 +72,14 @@ export function ResizeTerminal(arg1, arg2, arg3) {
 
 export function SaveLayout(arg1, arg2) {
   return window['go']['main']['App']['SaveLayout'](arg1, arg2);
+}
+
+export function SpawnAgent(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['SpawnAgent'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function StopAgent(arg1) {
+  return window['go']['main']['App']['StopAgent'](arg1);
 }
 
 export function UpdateProject(arg1, arg2) {
