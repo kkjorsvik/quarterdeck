@@ -359,6 +359,305 @@ func (a *App) GetWorkingTreeChanges(projectID int64) ([]agentPkg.RunFileChange, 
 	return result, nil
 }
 
+// --- Git integration bindings ---
+
+// GetGitStatus returns the git status of all files in the project.
+func (a *App) GetGitStatus(projectID int64) ([]gitPkg.FileStatus, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.GetStatus(proj.Path)
+}
+
+// ListWorktrees returns all git worktrees for the project.
+func (a *App) ListWorktrees(projectID int64) ([]gitPkg.Worktree, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.ListWorktrees(proj.Path)
+}
+
+// CreateWorktree creates a new worktree with a new branch and returns its path.
+func (a *App) CreateWorktree(projectID int64, branchName string) (string, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return "", fmt.Errorf("get project: %w", err)
+	}
+
+	// Determine worktree path
+	wtDir := filepath.Join(proj.Path, ".worktrees")
+	wtPath := filepath.Join(wtDir, branchName)
+
+	// Ensure .worktrees/ is in .gitignore
+	ensureGitignoreEntry(proj.Path, ".worktrees/")
+
+	// Create the worktree
+	if err := gitPkg.CreateWorktree(proj.Path, wtPath, branchName); err != nil {
+		return "", fmt.Errorf("create worktree: %w", err)
+	}
+
+	// Insert DB row
+	_, err = a.store.DB.Exec(
+		"INSERT INTO worktrees (project_id, path, branch) VALUES (?, ?, ?)",
+		projectID, wtPath, branchName,
+	)
+	if err != nil {
+		return "", fmt.Errorf("insert worktree row: %w", err)
+	}
+
+	return wtPath, nil
+}
+
+// RemoveWorktree removes a git worktree.
+func (a *App) RemoveWorktree(projectID int64, worktreePath string, force bool) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	if err := gitPkg.RemoveWorktree(proj.Path, worktreePath, force); err != nil {
+		return err
+	}
+	a.store.DB.Exec("DELETE FROM worktrees WHERE project_id = ? AND path = ?", projectID, worktreePath)
+	return nil
+}
+
+// AssignWorktreeAgent assigns an agent to a worktree.
+func (a *App) AssignWorktreeAgent(worktreeID int64, agentID string) error {
+	_, err := a.store.DB.Exec("UPDATE worktrees SET agent_id = ? WHERE id = ?", agentID, worktreeID)
+	return err
+}
+
+// ListBranches returns all local branches for the project.
+func (a *App) ListBranches(projectID int64) ([]gitPkg.Branch, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.ListBranches(proj.Path)
+}
+
+// CreateBranch creates a new branch in the project repo.
+func (a *App) CreateBranch(projectID int64, name, startPoint string) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.CreateBranch(proj.Path, name, startPoint)
+}
+
+// SwitchBranch switches the current branch in the project repo.
+func (a *App) SwitchBranch(projectID int64, name string) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.SwitchBranch(proj.Path, name)
+}
+
+// DeleteBranch deletes a branch from the project repo.
+func (a *App) DeleteBranch(projectID int64, name string, force bool) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.DeleteBranch(proj.Path, name, force)
+}
+
+// MergeBranch merges a branch into the current branch.
+func (a *App) MergeBranch(projectID int64, name string) (*gitPkg.MergeResult, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.MergeBranch(proj.Path, name)
+}
+
+// MergeWorktreeBranch merges a worktree branch into the main branch.
+func (a *App) MergeWorktreeBranch(projectID int64, branchName string) (*gitPkg.MergeResult, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.MergeBranch(proj.Path, branchName)
+}
+
+// CleanupWorktree removes a worktree, prunes, and optionally deletes the branch.
+func (a *App) CleanupWorktree(projectID int64, worktreePath string, deleteBranch bool) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	// Find the branch name from the worktree before removing
+	var branchName string
+	wts, err := gitPkg.ListWorktrees(proj.Path)
+	if err == nil {
+		for _, wt := range wts {
+			if wt.Path == worktreePath {
+				branchName = wt.Branch
+				break
+			}
+		}
+	}
+
+	// Remove the worktree
+	if err := gitPkg.RemoveWorktree(proj.Path, worktreePath, true); err != nil {
+		return fmt.Errorf("remove worktree: %w", err)
+	}
+
+	// Prune worktrees
+	cmd := exec.Command("git", "worktree", "prune")
+	cmd.Dir = proj.Path
+	cmd.CombinedOutput()
+
+	// Optionally delete the branch
+	if deleteBranch && branchName != "" {
+		gitPkg.DeleteBranch(proj.Path, branchName, true)
+	}
+
+	// Delete DB row
+	a.store.DB.Exec("DELETE FROM worktrees WHERE project_id = ? AND path = ?", projectID, worktreePath)
+
+	return nil
+}
+
+// HasConflicts returns whether the project repo has merge conflicts.
+func (a *App) HasConflicts(projectID int64) (bool, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return false, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.HasConflicts(proj.Path)
+}
+
+// ListConflictFiles returns files with merge conflicts.
+func (a *App) ListConflictFiles(projectID int64) ([]string, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.ListConflictFiles(proj.Path)
+}
+
+// MarkFileResolved marks a conflicted file as resolved.
+func (a *App) MarkFileResolved(projectID int64, filePath string) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.MarkFileResolved(proj.Path, filePath)
+}
+
+// CompleteMerge completes an in-progress merge.
+func (a *App) CompleteMerge(projectID int64) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.CompleteMerge(proj.Path)
+}
+
+// AbortMerge aborts an in-progress merge.
+func (a *App) AbortMerge(projectID int64) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.AbortMerge(proj.Path)
+}
+
+// GetGitLog returns commit log entries for the project.
+func (a *App) GetGitLog(projectID int64, limit, offset int) ([]gitPkg.CommitInfo, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.GetLog(proj.Path, limit, offset)
+}
+
+// GetCommitFileChanges returns file changes for a specific commit.
+func (a *App) GetCommitFileChanges(projectID int64, sha string) ([]gitPkg.FileChange, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.GetCommitFileChanges(proj.Path, sha)
+}
+
+// GetCommitFileDiff returns the diff for a file at a specific commit.
+func (a *App) GetCommitFileDiff(projectID int64, sha, filePath string) (*gitPkg.FileDiff, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.GetCommitFileDiff(proj.Path, sha, filePath)
+}
+
+// StashPush creates a new stash entry.
+func (a *App) StashPush(projectID int64, message string) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.StashPush(proj.Path, message)
+}
+
+// StashList returns all stash entries for the project.
+func (a *App) StashList(projectID int64) ([]gitPkg.StashEntry, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.StashList(proj.Path)
+}
+
+// StashPop applies and removes a stash entry.
+func (a *App) StashPop(projectID int64, index int) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.StashPop(proj.Path, index)
+}
+
+// StashDrop removes a stash entry without applying it.
+func (a *App) StashDrop(projectID int64, index int) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	return gitPkg.StashDrop(proj.Path, index)
+}
+
+// ensureGitignoreEntry adds an entry to .gitignore if not already present.
+func ensureGitignoreEntry(repoPath, entry string) {
+	gitignorePath := filepath.Join(repoPath, ".gitignore")
+	content, err := os.ReadFile(gitignorePath)
+	if err != nil && !os.IsNotExist(err) {
+		return
+	}
+
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) == entry {
+			return // already present
+		}
+	}
+
+	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	if len(content) > 0 && content[len(content)-1] != '\n' {
+		f.WriteString("\n")
+	}
+	f.WriteString(entry + "\n")
+}
+
 func (a *App) GetWorkingTreeFileDiff(projectID int64, filePath string) (*agentPkg.FileDiff, error) {
 	proj, err := a.projects.Get(projectID)
 	if err != nil {
