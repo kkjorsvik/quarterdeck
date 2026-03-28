@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import type { AgentState } from '../../lib/types';
+import { useLayoutStore } from '../../stores/layoutStore';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon?: string }> = {
   starting: { color: '#3b82f6', label: 'Starting' },
@@ -38,7 +39,22 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, projectName, projectColor, onClick, onContextMenu }: AgentCardProps) {
+  const addTab = useLayoutStore(s => s.addTab);
+  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const statusCfg = STATUS_CONFIG[agent.status] || STATUS_CONFIG.error;
+
+  const handleReview = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const run = await window.go.main.App.GetRunByAgentID(agent.id);
+      if (run) {
+        const title = 'Review: ' + (run.taskDescription || 'Run').slice(0, 20);
+        addTab(focusedPaneId, { type: 'review', title, runId: run.id, projectId: agent.projectId });
+      }
+    } catch {
+      // Silently fail — run may not exist yet
+    }
+  }, [agent.id, agent.projectId, addTab, focusedPaneId]);
 
   const needsAttention = agent.status === 'needs_input' || agent.status === 'error';
   const borderColor = agent.status === 'needs_input' ? '#eab308' : agent.status === 'error' ? '#ef4444' : 'transparent';
@@ -125,6 +141,35 @@ export function AgentCard({ agent, projectName, projectColor, onClick, onContext
           </span>
         </div>
       </div>
+
+      {/* Review button for done agents */}
+      {agent.status === 'done' && (
+        <button
+          onClick={handleReview}
+          title="Review changes"
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--border)',
+            borderRadius: '3px',
+            padding: '2px 6px',
+            fontSize: '10px',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            flexShrink: 0,
+            alignSelf: 'center',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent, #3b82f6)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent, #3b82f6)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+          }}
+        >
+          Review
+        </button>
+      )}
     </div>
   );
 }
