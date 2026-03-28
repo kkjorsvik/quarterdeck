@@ -7,9 +7,10 @@ import '@xterm/xterm/css/xterm.css';
 interface TerminalProps {
   workDir?: string;
   reattachSessionId?: string;
+  existingSessionId?: string;  // connect to an already-running PTY (e.g., agent)
 }
 
-export function TerminalPanel({ workDir = '/tmp', reattachSessionId }: TerminalProps) {
+export function TerminalPanel({ workDir = '/tmp', reattachSessionId, existingSessionId }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [exitInfo, setExitInfo] = useState<{ code: number; command: string } | null>(null);
   const [key, setKey] = useState(0);
@@ -56,17 +57,19 @@ export function TerminalPanel({ workDir = '/tmp', reattachSessionId }: TerminalP
       workDir={workDir}
       existingWs={existingWs}
       existingBuffer={existingBuffer}
+      existingSessionId={existingSessionId}
     />
   );
 }
 
-function TerminalPanelInner({ containerRef, workDir, existingWs, existingBuffer }: {
+function TerminalPanelInner({ containerRef, workDir, existingWs, existingBuffer, existingSessionId }: {
   containerRef: React.RefObject<HTMLDivElement>;
   workDir: string;
   existingWs?: WebSocket;
   existingBuffer?: Uint8Array[];
+  existingSessionId?: string;
 }) {
-  useTerminal(containerRef, { workDir, existingWs, existingBuffer });
+  useTerminal(containerRef, { workDir, existingWs, existingBuffer, existingSessionId });
 
   return (
     <div

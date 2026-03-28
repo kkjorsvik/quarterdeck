@@ -5,6 +5,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 
 interface UseTerminalOptions {
   workDir: string;
+  existingSessionId?: string;  // connect to an already-running PTY session (e.g., agent)
   existingWs?: WebSocket;
   existingBuffer?: Uint8Array[];
   onReady?: () => void;
@@ -125,7 +126,16 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         const port = await window.go.main.App.GetWSPort();
         const cols = term.cols;
         const rows = term.rows;
-        const id = await window.go.main.App.CreateTerminal(options.workDir || '/tmp', cols, rows);
+
+        // If connecting to an existing PTY session (e.g., agent), skip CreateTerminal
+        let id: string;
+        if (options.existingSessionId) {
+          id = options.existingSessionId;
+          // Resize the existing session to match our terminal size
+          window.go.main.App.ResizeTerminal(id, cols, rows).catch(() => {});
+        } else {
+          id = await window.go.main.App.CreateTerminal(options.workDir || '/tmp', cols, rows);
+        }
         sessionIdRef.current = id;
         options.onSessionId?.(id);
 

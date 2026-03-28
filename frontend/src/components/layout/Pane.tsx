@@ -46,7 +46,7 @@ export function Pane({ node }: PaneProps) {
             }}
           >
             {tab.type === 'terminal' ? (
-              <TerminalPanel workDir={activeProject?.path || '/tmp'} />
+              <TerminalPanel workDir={activeProject?.path || '/tmp'} existingSessionId={tab.terminalId} />
             ) : tab.type === 'settings' && tab.projectId ? (
               <ProjectSettings projectId={tab.projectId} />
             ) : tab.type === 'runHistory' && tab.projectId ? (
