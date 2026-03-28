@@ -15,19 +15,21 @@ export function TerminalPanel({ workDir = '/tmp', reattachSessionId, existingSes
   const [exitInfo, setExitInfo] = useState<{ code: number; command: string } | null>(null);
   const [key, setKey] = useState(0);
 
-  // Check if we should reattach
+  // Check if we should reattach from background store
+  // This applies to both regular terminals (reattachSessionId) and agent terminals (existingSessionId)
   const bgStore = useBackgroundTerminalStore.getState();
+  const checkSessionId = reattachSessionId || existingSessionId;
   let existingWs: WebSocket | undefined;
   let existingBuffer: Uint8Array[] | undefined;
   let bgExitInfo: { code: number; command: string } | null = null;
 
-  if (reattachSessionId) {
-    const bg = bgStore.terminals.get(reattachSessionId);
+  if (checkSessionId) {
+    const bg = bgStore.terminals.get(checkSessionId);
     if (bg) {
       if (bg.exitInfo) {
         bgExitInfo = bg.exitInfo;
       } else {
-        const reattached = bgStore.reattach(reattachSessionId);
+        const reattached = bgStore.reattach(checkSessionId);
         if (reattached) {
           existingWs = reattached.ws;
           existingBuffer = reattached.buffer;
