@@ -292,13 +292,25 @@ func (m *Manager) trackRun(agent *Agent) {
 	}
 
 	var changes []gitPkg.FileChange
+	var numstat map[string][2]int
 	if endCommit != agent.BaseCommit {
 		changes, err = gitPkg.DiffFileList(agent.WorkDir, agent.BaseCommit, endCommit)
+		if err != nil {
+			log.Printf("run tracking: failed to get diff: %v", err)
+		}
+		numstat, err = gitPkg.DiffNumstat(agent.WorkDir, agent.BaseCommit, endCommit)
+		if err != nil {
+			log.Printf("run tracking: failed to get numstat: %v", err)
+		}
 	} else {
 		changes, err = gitPkg.DiffWorkingTree(agent.WorkDir)
-	}
-	if err != nil {
-		log.Printf("run tracking: failed to get diff: %v", err)
+		if err != nil {
+			log.Printf("run tracking: failed to get diff: %v", err)
+		}
+		numstat, err = gitPkg.DiffNumstatWorkingTree(agent.WorkDir)
+		if err != nil {
+			log.Printf("run tracking: failed to get numstat: %v", err)
+		}
 	}
 
 	if _, err := m.store.DB.Exec(
@@ -309,9 +321,16 @@ func (m *Manager) trackRun(agent *Agent) {
 	}
 
 	for _, change := range changes {
+		var additions, deletions int
+		if numstat != nil {
+			if stat, ok := numstat[change.Path]; ok {
+				additions = stat[0]
+				deletions = stat[1]
+			}
+		}
 		if _, err := m.store.DB.Exec(
-			"INSERT INTO run_file_changes (run_id, file_path, change_type) VALUES (?, ?, ?)",
-			agent.RunID, change.Path, change.ChangeType,
+			"INSERT INTO run_file_changes (run_id, file_path, change_type, additions, deletions) VALUES (?, ?, ?, ?, ?)",
+			agent.RunID, change.Path, change.ChangeType, additions, deletions,
 		); err != nil {
 			log.Printf("run tracking: failed to insert file change: %v", err)
 		}
