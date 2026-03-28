@@ -76,6 +76,61 @@ func parseNameStatus(output string) []FileChange {
 	return changes
 }
 
+// ShowFile returns the content of a file at a given commit ref.
+func ShowFile(repoPath, commitRef, filePath string) (string, error) {
+	cmd := exec.Command("git", "show", commitRef+":"+filePath)
+	cmd.Dir = repoPath
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git show %s:%s: %w", commitRef, filePath, err)
+	}
+	return string(out), nil
+}
+
+// DiffNumstat returns per-file addition/deletion counts between two refs.
+func DiffNumstat(repoPath, fromRef, toRef string) (map[string][2]int, error) {
+	cmd := exec.Command("git", "diff", "--numstat", fromRef, toRef)
+	cmd.Dir = repoPath
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git diff --numstat: %w", err)
+	}
+	return parseNumstat(string(out)), nil
+}
+
+// DiffNumstatWorkingTree returns per-file addition/deletion counts for uncommitted changes.
+func DiffNumstatWorkingTree(repoPath string) (map[string][2]int, error) {
+	cmd := exec.Command("git", "diff", "--numstat", "HEAD")
+	cmd.Dir = repoPath
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git diff --numstat HEAD: %w", err)
+	}
+	return parseNumstat(string(out)), nil
+}
+
+func parseNumstat(output string) map[string][2]int {
+	result := make(map[string][2]int)
+	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 3 {
+			continue
+		}
+		if parts[0] == "-" || parts[1] == "-" {
+			result[parts[len(parts)-1]] = [2]int{0, 0}
+			continue
+		}
+		var add, del int
+		fmt.Sscanf(parts[0], "%d", &add)
+		fmt.Sscanf(parts[1], "%d", &del)
+		result[parts[len(parts)-1]] = [2]int{add, del}
+	}
+	return result
+}
+
 // parsePorcelain parses output of git status --porcelain.
 // Lines look like: "?? newfile.txt", " M modified.txt", "A  staged.txt", "D  deleted.txt"
 func parsePorcelain(output string) []FileChange {

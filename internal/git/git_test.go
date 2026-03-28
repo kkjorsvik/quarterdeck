@@ -134,6 +134,68 @@ func TestDiffFileListWithDelete(t *testing.T) {
 	}
 }
 
+func TestShowFile(t *testing.T) {
+	dir := initTestRepo(t)
+	content, err := ShowFile(dir, "HEAD", "file1.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if content != "hello" {
+		t.Errorf("expected 'hello', got %q", content)
+	}
+}
+
+func TestShowFileNotFound(t *testing.T) {
+	dir := initTestRepo(t)
+	_, err := ShowFile(dir, "HEAD", "nonexistent.txt")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file")
+	}
+}
+
+func TestDiffNumstat(t *testing.T) {
+	dir := initTestRepo(t)
+	base, _ := HeadCommit(dir)
+
+	os.WriteFile(filepath.Join(dir, "file2.txt"), []byte("line1\nline2\nline3\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "file1.txt"), []byte("modified\n"), 0644)
+	gitCmd(t, dir, "add", ".")
+	gitCmd(t, dir, "commit", "-m", "second")
+
+	head, _ := HeadCommit(dir)
+	stats, err := DiffNumstat(dir, base, head)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if s, ok := stats["file2.txt"]; !ok {
+		t.Error("file2.txt not found in numstat")
+	} else if s[0] != 3 {
+		t.Errorf("file2.txt additions: want 3, got %d", s[0])
+	}
+
+	if s, ok := stats["file1.txt"]; !ok {
+		t.Error("file1.txt not found in numstat")
+	} else if s[0] == 0 && s[1] == 0 {
+		t.Error("file1.txt expected non-zero changes")
+	}
+}
+
+func TestDiffNumstatWorkingTree(t *testing.T) {
+	dir := initTestRepo(t)
+
+	os.WriteFile(filepath.Join(dir, "file1.txt"), []byte("changed\ncontent\n"), 0644)
+
+	stats, err := DiffNumstatWorkingTree(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := stats["file1.txt"]; !ok {
+		t.Error("file1.txt not found in working tree numstat")
+	}
+}
+
 func TestDiffWorkingTree(t *testing.T) {
 	dir := initTestRepo(t)
 
