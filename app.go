@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fmt"
+
 	agentPkg "github.com/kkjorsvik/quarterdeck/internal/agent"
 	"github.com/kkjorsvik/quarterdeck/internal/db"
 	"github.com/kkjorsvik/quarterdeck/internal/filetree"
+	gitPkg "github.com/kkjorsvik/quarterdeck/internal/git"
 	"github.com/kkjorsvik/quarterdeck/internal/layout"
 	"github.com/kkjorsvik/quarterdeck/internal/project"
 	ptyPkg "github.com/kkjorsvik/quarterdeck/internal/pty"
@@ -22,9 +25,10 @@ type App struct {
 	projects *project.Service
 	layouts  *layout.Service
 	fileTree *filetree.Service
-	ptyMgr   *ptyPkg.Manager
-	agentMgr *agentPkg.Manager
-	wsServer *ws.Server
+	ptyMgr     *ptyPkg.Manager
+	agentMgr   *agentPkg.Manager
+	runService *agentPkg.RunService
+	wsServer   *ws.Server
 }
 
 func NewApp() *App {
@@ -49,7 +53,8 @@ func (a *App) startup(ctx context.Context) {
 	a.fileTree = filetree.NewService()
 	a.ptyMgr = ptyPkg.NewManager()
 
-	// Initialize agent manager
+	// Initialize run service and agent manager
+	a.runService = agentPkg.NewRunService(a.store)
 	a.agentMgr = agentPkg.NewManager(a.ptyMgr, a.store, func(data []byte) {
 		if a.wsServer != nil {
 			a.wsServer.EventHub().Broadcast(data)
@@ -199,4 +204,202 @@ func (a *App) ListAgents() []*agentPkg.Agent {
 
 func (a *App) ListProjectAgents(projectID int64) []*agentPkg.Agent {
 	return a.agentMgr.ListByProject(projectID)
+}
+
+// --- Review workflow bindings ---
+
+func (a *App) ListProjectRuns(projectID int64) ([]agentPkg.AgentRunWithStats, error) {
+	return a.runService.ListProjectRuns(projectID)
+}
+
+func (a *App) GetRunFileChanges(runID int64) ([]agentPkg.RunFileChange, error) {
+	return a.runService.GetRunFileChanges(runID)
+}
+
+func (a *App) GetRunByAgentID(agentID string) (*agentPkg.AgentRunWithStats, error) {
+	return a.runService.GetRunByAgentID(agentID)
+}
+
+func (a *App) GetFileDiff(projectID int64, baseCommit, endCommit, filePath string) (*agentPkg.FileDiff, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+
+	// Determine change type from diff
+	changes, err := gitPkg.DiffFileList(proj.Path, baseCommit, endCommit)
+	if err != nil {
+		return nil, fmt.Errorf("diff file list: %w", err)
+	}
+	changeType := "M"
+	for _, c := range changes {
+		if c.Path == filePath {
+			changeType = c.ChangeType
+			break
+		}
+	}
+
+	var original, modified string
+	if changeType != "A" {
+		original, err = gitPkg.ShowFile(proj.Path, baseCommit, filePath)
+		if err != nil {
+			return nil, fmt.Errorf("show original: %w", err)
+		}
+	}
+	if changeType != "D" {
+		modified, err = gitPkg.ShowFile(proj.Path, endCommit, filePath)
+		if err != nil {
+			return nil, fmt.Errorf("show modified: %w", err)
+		}
+	}
+
+	return &agentPkg.FileDiff{
+		FilePath:   filePath,
+		Original:   original,
+		Modified:   modified,
+		ChangeType: changeType,
+	}, nil
+}
+
+func (a *App) RevertFile(projectID int64, baseCommit, filePath, changeType string) error {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	switch changeType {
+	case "A":
+		// New file — remove it
+		fullPath := filepath.Join(proj.Path, filePath)
+		if err := os.Remove(fullPath); err != nil {
+			return fmt.Errorf("remove added file: %w", err)
+		}
+	case "M", "D":
+		// Modified or deleted — restore from base commit
+		cmd := exec.Command("git", "checkout", baseCommit, "--", filePath)
+		cmd.Dir = proj.Path
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("git checkout: %s: %w", string(out), err)
+		}
+	default:
+		return fmt.Errorf("unknown change type: %s", changeType)
+	}
+	return nil
+}
+
+func (a *App) CommitReviewedChanges(projectID int64, message string, filePaths []string, push bool) (string, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return "", fmt.Errorf("get project: %w", err)
+	}
+
+	// Stage each file
+	for _, fp := range filePaths {
+		cmd := exec.Command("git", "add", fp)
+		cmd.Dir = proj.Path
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("git add %s: %s: %w", fp, string(out), err)
+		}
+	}
+
+	// Commit
+	cmd := exec.Command("git", "commit", "-m", message)
+	cmd.Dir = proj.Path
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("git commit: %s: %w", string(out), err)
+	}
+
+	// Get new SHA
+	sha, err := gitPkg.HeadCommit(proj.Path)
+	if err != nil {
+		return "", fmt.Errorf("get new head: %w", err)
+	}
+
+	// Optional push
+	if push {
+		cmd := exec.Command("git", "push")
+		cmd.Dir = proj.Path
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return sha, fmt.Errorf("git push: %s: %w", string(out), err)
+		}
+	}
+
+	return sha, nil
+}
+
+func (a *App) GetWorkingTreeChanges(projectID int64) ([]agentPkg.RunFileChange, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+
+	changes, err := gitPkg.DiffWorkingTree(proj.Path)
+	if err != nil {
+		return nil, fmt.Errorf("diff working tree: %w", err)
+	}
+
+	numstat, err := gitPkg.DiffNumstatWorkingTree(proj.Path)
+	if err != nil {
+		// Non-fatal: numstat may fail for untracked files
+		numstat = make(map[string][2]int)
+	}
+
+	var result []agentPkg.RunFileChange
+	for _, c := range changes {
+		fc := agentPkg.RunFileChange{
+			FilePath:   c.Path,
+			ChangeType: c.ChangeType,
+		}
+		if stat, ok := numstat[c.Path]; ok {
+			fc.Additions = stat[0]
+			fc.Deletions = stat[1]
+		}
+		result = append(result, fc)
+	}
+	return result, nil
+}
+
+func (a *App) GetWorkingTreeFileDiff(projectID int64, filePath string) (*agentPkg.FileDiff, error) {
+	proj, err := a.projects.Get(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+
+	// Determine change type
+	changes, err := gitPkg.DiffWorkingTree(proj.Path)
+	if err != nil {
+		return nil, fmt.Errorf("diff working tree: %w", err)
+	}
+	changeType := "M"
+	for _, c := range changes {
+		if c.Path == filePath {
+			changeType = c.ChangeType
+			break
+		}
+	}
+
+	var original string
+	if changeType != "A" {
+		original, err = gitPkg.ShowFile(proj.Path, "HEAD", filePath)
+		if err != nil {
+			return nil, fmt.Errorf("show original: %w", err)
+		}
+	}
+
+	var modified string
+	if changeType != "D" {
+		fullPath := filepath.Join(proj.Path, filePath)
+		content, err := a.fileTree.ReadFile(fullPath)
+		if err != nil {
+			return nil, fmt.Errorf("read modified: %w", err)
+		}
+		modified = content
+	}
+
+	return &agentPkg.FileDiff{
+		FilePath:   filePath,
+		Original:   original,
+		Modified:   modified,
+		ChangeType: changeType,
+	}, nil
 }
