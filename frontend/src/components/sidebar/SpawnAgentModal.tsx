@@ -3,6 +3,7 @@ import { useOverlayStore } from '../../stores/overlayStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAgentStore } from '../../stores/agentStore';
 import { useLayoutStore } from '../../stores/layoutStore';
+import type { AgentState } from '../../lib/types';
 
 const AGENT_TYPES = [
   { value: 'claude_code', label: 'Claude Code' },
@@ -16,6 +17,7 @@ export function SpawnAgentModal() {
   const close = useOverlayStore(s => s.close);
   const projects = useProjectStore(s => s.projects);
   const activeProjectId = useProjectStore(s => s.activeProjectId);
+  const switchProject = useProjectStore(s => s.switchProject);
   const addAgent = useAgentStore(s => s.addAgent);
   const addTab = useLayoutStore(s => s.addTab);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
@@ -77,12 +79,19 @@ export function SpawnAgentModal() {
         ptySessionId: result.ptySessionId,
         startedAt: new Date().toISOString(),
         exitCode: null,
-      });
-      // Create terminal tab for agent
+      } as AgentState);
+
+      // Switch to the agent's project first (if different), then add the terminal tab
+      if (projectId !== activeProjectId) {
+        await switchProject(projectId);
+      }
+
       const title = taskDesc
         ? `[${displayName}] ${taskDesc.substring(0, 30)}`
         : `[${displayName}]`;
-      addTab(focusedPaneId, {
+      // Get the current focused pane after project switch (layout may have changed)
+      const currentFocusedPane = useLayoutStore.getState().focusedPaneId;
+      addTab(currentFocusedPane, {
         type: 'terminal',
         title,
         terminalId: result.ptySessionId,
@@ -93,7 +102,7 @@ export function SpawnAgentModal() {
     } finally {
       setLaunching(false);
     }
-  }, [launching, projectId, agentType, taskDesc, workDir, customCmd, projects, addAgent, addTab, focusedPaneId, close]);
+  }, [launching, projectId, agentType, taskDesc, workDir, customCmd, projects, addAgent, addTab, focusedPaneId, close, activeProjectId, switchProject]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
