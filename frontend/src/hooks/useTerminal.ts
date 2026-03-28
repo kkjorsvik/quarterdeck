@@ -129,10 +129,9 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
 
         // If connecting to an existing PTY session (e.g., agent), skip CreateTerminal
         let id: string;
-        if (options.existingSessionId) {
-          id = options.existingSessionId;
-          // Resize the existing session to match our terminal size
-          window.go.main.App.ResizeTerminal(id, cols, rows).catch(() => {});
+        const isReconnect = !!options.existingSessionId;
+        if (isReconnect) {
+          id = options.existingSessionId!;
         } else {
           id = await window.go.main.App.CreateTerminal(options.workDir || '/tmp', cols, rows);
         }
@@ -145,6 +144,13 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
 
         socket.onopen = () => {
           term.focus();
+          // For reconnecting to an existing session (agent), send a resize to trigger
+          // the running TUI app to repaint its full screen into the new terminal
+          if (isReconnect) {
+            setTimeout(() => {
+              window.go.main.App.ResizeTerminal(id, cols, rows).catch(() => {});
+            }, 50);
+          }
           options.onReady?.();
         };
 
