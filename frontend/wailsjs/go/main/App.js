@@ -10,6 +10,10 @@ export function CloseTerminal(arg1) {
   return window['go']['main']['App']['CloseTerminal'](arg1);
 }
 
+export function CommitReviewedChanges(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['CommitReviewedChanges'](arg1, arg2, arg3, arg4);
+}
+
 export function CreateTerminal(arg1, arg2, arg3) {
   return window['go']['main']['App']['CreateTerminal'](arg1, arg2, arg3);
 }
@@ -20,6 +24,10 @@ export function DeleteProject(arg1) {
 
 export function GetAllLayouts() {
   return window['go']['main']['App']['GetAllLayouts']();
+}
+
+export function GetFileDiff(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['GetFileDiff'](arg1, arg2, arg3, arg4);
 }
 
 export function GetGitBranch(arg1) {
@@ -34,8 +42,24 @@ export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
 }
 
+export function GetRunByAgentID(arg1) {
+  return window['go']['main']['App']['GetRunByAgentID'](arg1);
+}
+
+export function GetRunFileChanges(arg1) {
+  return window['go']['main']['App']['GetRunFileChanges'](arg1);
+}
+
 export function GetWSPort() {
   return window['go']['main']['App']['GetWSPort']();
+}
+
+export function GetWorkingTreeChanges(arg1) {
+  return window['go']['main']['App']['GetWorkingTreeChanges'](arg1);
+}
+
+export function GetWorkingTreeFileDiff(arg1, arg2) {
+  return window['go']['main']['App']['GetWorkingTreeFileDiff'](arg1, arg2);
 }
 
 export function ListAgents() {
@@ -48,6 +72,10 @@ export function ListProjectAgents(arg1) {
 
 export function ListProjectFiles(arg1) {
   return window['go']['main']['App']['ListProjectFiles'](arg1);
+}
+
+export function ListProjectRuns(arg1) {
+  return window['go']['main']['App']['ListProjectRuns'](arg1);
 }
 
 export function ListProjects() {
@@ -68,6 +96,10 @@ export function ReadFile(arg1) {
 
 export function ResizeTerminal(arg1, arg2, arg3) {
   return window['go']['main']['App']['ResizeTerminal'](arg1, arg2, arg3);
+}
+
+export function RevertFile(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['RevertFile'](arg1, arg2, arg3, arg4);
 }
 
 export function SaveLayout(arg1, arg2) {

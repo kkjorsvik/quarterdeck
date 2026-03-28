@@ -8,11 +8,15 @@ export function AddProject(arg1:string,arg2:string):Promise<project.Project>;
 
 export function CloseTerminal(arg1:string):Promise<void>;
 
+export function CommitReviewedChanges(arg1:number,arg2:string,arg3:Array<string>,arg4:boolean):Promise<string>;
+
 export function CreateTerminal(arg1:string,arg2:number,arg3:number):Promise<string>;
 
 export function DeleteProject(arg1:number):Promise<void>;
 
 export function GetAllLayouts():Promise<Record<number, string>>;
+
+export function GetFileDiff(arg1:number,arg2:string,arg3:string,arg4:string):Promise<agent.FileDiff>;
 
 export function GetGitBranch(arg1:string):Promise<string>;
 
@@ -20,13 +24,23 @@ export function GetLayout(arg1:number):Promise<string>;
 
 export function GetProject(arg1:number):Promise<project.Project>;
 
+export function GetRunByAgentID(arg1:string):Promise<agent.AgentRunWithStats>;
+
+export function GetRunFileChanges(arg1:number):Promise<Array<agent.RunFileChange>>;
+
 export function GetWSPort():Promise<number>;
+
+export function GetWorkingTreeChanges(arg1:number):Promise<Array<agent.RunFileChange>>;
+
+export function GetWorkingTreeFileDiff(arg1:number,arg2:string):Promise<agent.FileDiff>;
 
 export function ListAgents():Promise<Array<agent.Agent>>;
 
 export function ListProjectAgents(arg1:number):Promise<Array<agent.Agent>>;
 
 export function ListProjectFiles(arg1:string):Promise<Array<string>>;
+
+export function ListProjectRuns(arg1:number):Promise<Array<agent.AgentRunWithStats>>;
 
 export function ListProjects():Promise<Array<project.Project>>;
 
@@ -37,6 +51,8 @@ export function ReadDirFiltered(arg1:string):Promise<Array<filetree.FileEntry>>;
 export function ReadFile(arg1:string):Promise<string>;
 
 export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
+
+export function RevertFile(arg1:number,arg2:string,arg3:string,arg4:string):Promise<void>;
 
 export function SaveLayout(arg1:number,arg2:string):Promise<void>;
 

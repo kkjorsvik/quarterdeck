@@ -10,6 +10,8 @@ export namespace agent {
 	    status: string;
 	    taskDescription: string;
 	    ptySessionId: string;
+	    workDir: string;
+	    baseCommit: string;
 	    // Go type: time
 	    startedAt: any;
 	    exitCode?: number;
@@ -29,6 +31,8 @@ export namespace agent {
 	        this.status = source["status"];
 	        this.taskDescription = source["taskDescription"];
 	        this.ptySessionId = source["ptySessionId"];
+	        this.workDir = source["workDir"];
+	        this.baseCommit = source["baseCommit"];
 	        this.startedAt = this.convertValues(source["startedAt"], null);
 	        this.exitCode = source["exitCode"];
 	    }
@@ -50,6 +54,82 @@ export namespace agent {
 		    }
 		    return a;
 		}
+	}
+	export class AgentRunWithStats {
+	    id: number;
+	    projectId: number;
+	    agentType: string;
+	    taskDescription: string;
+	    baseCommit: string;
+	    endCommit: string;
+	    status: string;
+	    startedAt: string;
+	    completedAt: string;
+	    agentId: string;
+	    fileCount: number;
+	    totalAdditions: number;
+	    totalDeletions: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new AgentRunWithStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"];
+	        this.agentType = source["agentType"];
+	        this.taskDescription = source["taskDescription"];
+	        this.baseCommit = source["baseCommit"];
+	        this.endCommit = source["endCommit"];
+	        this.status = source["status"];
+	        this.startedAt = source["startedAt"];
+	        this.completedAt = source["completedAt"];
+	        this.agentId = source["agentId"];
+	        this.fileCount = source["fileCount"];
+	        this.totalAdditions = source["totalAdditions"];
+	        this.totalDeletions = source["totalDeletions"];
+	    }
+	}
+	export class FileDiff {
+	    filePath: string;
+	    original: string;
+	    modified: string;
+	    changeType: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileDiff(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.original = source["original"];
+	        this.modified = source["modified"];
+	        this.changeType = source["changeType"];
+	    }
+	}
+	export class RunFileChange {
+	    id: number;
+	    runId: number;
+	    filePath: string;
+	    changeType: string;
+	    additions: number;
+	    deletions: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RunFileChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.runId = source["runId"];
+	        this.filePath = source["filePath"];
+	        this.changeType = source["changeType"];
+	        this.additions = source["additions"];
+	        this.deletions = source["deletions"];
+	    }
 	}
 	export class SpawnResult {
 	    agentId: string;
