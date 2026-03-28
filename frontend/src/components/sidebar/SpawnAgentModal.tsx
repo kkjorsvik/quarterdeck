@@ -5,7 +5,7 @@ import { useAgentStore } from '../../stores/agentStore';
 import { useLayoutStore } from '../../stores/layoutStore';
 
 const AGENT_TYPES = [
-  { value: 'claude', label: 'Claude Code' },
+  { value: 'claude_code', label: 'Claude Code' },
   { value: 'codex', label: 'Codex' },
   { value: 'opencode', label: 'OpenCode' },
   { value: 'custom', label: 'Custom' },
@@ -20,7 +20,7 @@ export function SpawnAgentModal() {
   const addTab = useLayoutStore(s => s.addTab);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
 
-  const [agentType, setAgentType] = useState('claude');
+  const [agentType, setAgentType] = useState('claude_code');
   const [taskDesc, setTaskDesc] = useState('');
   const [projectId, setProjectId] = useState<number | null>(null);
   const [workDir, setWorkDir] = useState('');
