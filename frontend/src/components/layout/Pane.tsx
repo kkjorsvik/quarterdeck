@@ -6,6 +6,9 @@ import { TerminalPanel } from '../terminal/Terminal';
 import { useProjectStore } from '../../stores/projectStore';
 import { MonacoEditor } from '../editor/MonacoEditor';
 import { ProjectSettings } from '../settings/ProjectSettings';
+import { RunHistory } from '../review/RunHistory';
+import { RunReview } from '../review/RunReview';
+import { WorkingTreeDiff } from '../review/WorkingTreeDiff';
 
 interface PaneProps {
   node: LeafNode;
@@ -46,6 +49,12 @@ export function Pane({ node }: PaneProps) {
               <TerminalPanel workDir={activeProject?.path || '/tmp'} />
             ) : tab.type === 'settings' && tab.projectId ? (
               <ProjectSettings projectId={tab.projectId} />
+            ) : tab.type === 'runHistory' && tab.projectId ? (
+              <RunHistory projectId={tab.projectId} />
+            ) : tab.type === 'review' && tab.runId && tab.projectId ? (
+              <RunReview runId={tab.runId} projectId={tab.projectId} />
+            ) : tab.type === 'workingTree' && tab.projectId ? (
+              <WorkingTreeDiff projectId={tab.projectId} />
             ) : (
               <MonacoEditor filePath={tab.filePath} />
             )}

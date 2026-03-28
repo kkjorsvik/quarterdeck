@@ -9,6 +9,7 @@ import { AddProjectModal } from './components/sidebar/AddProjectModal';
 import { ProjectSwitcher } from './components/overlay/ProjectSwitcher';
 import { FileSearch } from './components/overlay/FileSearch';
 import { SpawnAgentModal } from './components/sidebar/SpawnAgentModal';
+import { CommitModal } from './components/review/CommitModal';
 import { useAgentEvents } from './hooks/useAgentEvents';
 import './App.css';
 
@@ -85,6 +86,30 @@ function App() {
         e.preventDefault();
         toggleOverlay('spawnAgent');
         break;
+      case 'D': {
+        e.preventDefault();
+        if (activeProjectId === null) break;
+        // Smart: if exactly 1 done run, open review directly; else open history
+        window.go.main.App.ListProjectRuns(activeProjectId).then((runs: any[]) => {
+          const doneRuns = (runs || []).filter((r: any) => r.status === 'done');
+          if (doneRuns.length === 1) {
+            const run = doneRuns[0];
+            const title = 'Review: ' + (run.taskDescription || 'Run').slice(0, 20);
+            addTab(focusedPaneId, { type: 'review', title, runId: run.id, projectId: activeProjectId });
+          } else {
+            addTab(focusedPaneId, { type: 'runHistory', title: 'Run History', projectId: activeProjectId });
+          }
+        }).catch(() => {
+          addTab(focusedPaneId, { type: 'runHistory', title: 'Run History', projectId: activeProjectId });
+        });
+        break;
+      }
+      case 'G': {
+        e.preventDefault();
+        if (activeProjectId === null) break;
+        addTab(focusedPaneId, { type: 'workingTree', title: 'Working Tree', projectId: activeProjectId });
+        break;
+      }
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');
@@ -125,6 +150,7 @@ function App() {
       <ProjectSwitcher />
       <FileSearch />
       <SpawnAgentModal />
+      <CommitModal />
     </div>
   );
 }
