@@ -14,7 +14,7 @@ export function Sidebar() {
   const switchProject = useProjectStore(s => s.switchProject);
   const updateProject = useProjectStore(s => s.updateProject);
   const deleteProject = useProjectStore(s => s.deleteProject);
-  const activeProject = useProjectStore(s => s.getActiveProject());
+  const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
   const projectBranches = useProjectStore(s => s.projectBranches);
   const pollBranches = useProjectStore(s => s.pollBranches);
   const openOverlay = useOverlayStore(s => s.open);

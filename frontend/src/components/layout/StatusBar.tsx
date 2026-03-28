@@ -13,9 +13,11 @@ function countTerminals(node: LayoutNode): number {
 }
 
 export function StatusBar() {
-  const activeProject = useProjectStore(s => s.getActiveProject());
+  const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
   const root = useLayoutStore(s => s.root);
-  const focusedLeaf = useLayoutStore(s => s.getFocusedLeaf());
+  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
+  const getLeafById = useLayoutStore(s => s.getLeafById);
+  const focusedLeaf = getLeafById(focusedPaneId);
   const [branch, setBranch] = useState('');
 
   useEffect(() => {

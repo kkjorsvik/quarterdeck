@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import type { Project } from '../../lib/types';
 import { getProjectColor } from '../../lib/projectColors';
 import { ContextMenu, type ContextMenuItem } from './ContextMenu';
@@ -36,11 +36,21 @@ export function ProjectEntry({
   const renameRef = useRef<HTMLInputElement>(null);
 
   const updateProject = useProjectStore(s => s.updateProject);
-  const bgTerminals = useBackgroundTerminalStore(s => s.getByProject(project.id));
-  const bgHasNewOutput = useBackgroundTerminalStore(s => s.hasNewOutput(project.id));
-  const bgOutputTimestamp = useBackgroundTerminalStore(s => s.getProjectOutputTimestamp(project.id));
-  const fgSessions = useTerminalStore(s => s.getSessionsByProject(project.id));
-  const projectAgents = useAgentStore(s => s.getProjectAgents(project.id));
+
+  // Read raw store state — don't call methods in selectors (they return new refs and cause infinite loops)
+  const bgTerminalMap = useBackgroundTerminalStore(s => s.terminals);
+  const bgTerminals = useMemo(() => Array.from(bgTerminalMap.values()).filter(t => t.projectId === project.id), [bgTerminalMap, project.id]);
+  const bgHasNewOutput = useMemo(() => bgTerminals.some(t => t.hasNewOutput), [bgTerminals]);
+  const bgOutputTimestamp = useMemo(() => {
+    const ts = bgTerminals.map(t => t.lastOutputTimestamp).filter(t => t > 0);
+    return ts.length > 0 ? Math.max(...ts) : null;
+  }, [bgTerminals]);
+
+  const fgSessionMap = useTerminalStore(s => s.sessions);
+  const fgSessions = useMemo(() => Array.from(fgSessionMap.values()).filter(s => s.projectId === project.id), [fgSessionMap, project.id]);
+
+  const agentMap = useAgentStore(s => s.agents);
+  const projectAgents = useMemo(() => Array.from(agentMap.values()).filter(a => a.projectId === project.id), [agentMap, project.id]);
 
   const color = getProjectColor(project.sortOrder, project.color || null);
 

@@ -15,7 +15,7 @@ export function Pane({ node }: PaneProps) {
   const setFocusedPane = useLayoutStore(s => s.setFocusedPane);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const isFocused = focusedPaneId === node.id;
-  const activeProject = useProjectStore(s => s.getActiveProject());
+  const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
 
   return (
     <div

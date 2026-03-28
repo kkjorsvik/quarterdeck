@@ -22,7 +22,7 @@ function HighlightedText({ text, matches }: { text: string; matches: number[] })
 export function FileSearch() {
   const active = useOverlayStore(s => s.active);
   const close = useOverlayStore(s => s.close);
-  const activeProject = useProjectStore(s => s.getActiveProject());
+  const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
   const openFile = useEditorStore(s => s.openFile);
   const addTab = useLayoutStore(s => s.addTab);
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
