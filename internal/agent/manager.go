@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kkjorsvik/quarterdeck/internal/db"
+	gitPkg "github.com/kkjorsvik/quarterdeck/internal/git"
 	"github.com/kkjorsvik/quarterdeck/internal/pty"
 )
 
@@ -113,6 +114,8 @@ func (m *Manager) Spawn(projectID int64, agentType, taskDesc, workDir, customCmd
 		Status:       AgentStatusStarting,
 		TaskDesc:     taskDesc,
 		PTYSessionID: sessionID,
+		WorkDir:      workDir,
+		BaseCommit:   baseCommit,
 		StartedAt:    time.Now(),
 	}
 	_ = icon // stored in config, not on agent struct
@@ -240,6 +243,31 @@ func (m *Manager) onStatusChange(agent *Agent, status AgentStatus) {
 		}
 	}
 
+	// Notifications
+	projectName := fmt.Sprintf("[project %d]", agent.ProjectID)
+	var pName string
+	if err := m.store.DB.QueryRow("SELECT name FROM projects WHERE id = ?", agent.ProjectID).Scan(&pName); err == nil {
+		projectName = fmt.Sprintf("[%s]", pName)
+	}
+
+	switch status {
+	case AgentStatusNeedsInput:
+		Notify(projectName+" Agent needs input", agent.DisplayName, "normal")
+	case AgentStatusDone:
+		Notify(projectName+" Agent finished", agent.DisplayName, "low")
+	case AgentStatusError:
+		body := agent.DisplayName
+		if agent.ExitCode != nil {
+			body = fmt.Sprintf("%s (exit code %d)", agent.DisplayName, *agent.ExitCode)
+		}
+		Notify(projectName+" Agent errored", body, "critical")
+	}
+
+	// Track run on completion
+	if status == AgentStatusDone || status == AgentStatusError {
+		m.trackRun(agent)
+	}
+
 	// Broadcast event
 	event := map[string]interface{}{
 		"type":    "agent_status",
@@ -249,5 +277,43 @@ func (m *Manager) onStatusChange(agent *Agent, status AgentStatus) {
 	data, err := json.Marshal(event)
 	if err == nil {
 		m.broadcast(data)
+	}
+}
+
+func (m *Manager) trackRun(agent *Agent) {
+	if agent.BaseCommit == "" || agent.RunID == 0 {
+		return
+	}
+
+	endCommit, err := gitPkg.HeadCommit(agent.WorkDir)
+	if err != nil {
+		log.Printf("run tracking: failed to get HEAD: %v", err)
+		return
+	}
+
+	var changes []gitPkg.FileChange
+	if endCommit != agent.BaseCommit {
+		changes, err = gitPkg.DiffFileList(agent.WorkDir, agent.BaseCommit, endCommit)
+	} else {
+		changes, err = gitPkg.DiffWorkingTree(agent.WorkDir)
+	}
+	if err != nil {
+		log.Printf("run tracking: failed to get diff: %v", err)
+	}
+
+	if _, err := m.store.DB.Exec(
+		"UPDATE agent_runs SET end_commit = ? WHERE id = ?",
+		endCommit, agent.RunID,
+	); err != nil {
+		log.Printf("run tracking: failed to update end_commit: %v", err)
+	}
+
+	for _, change := range changes {
+		if _, err := m.store.DB.Exec(
+			"INSERT INTO run_file_changes (run_id, file_path, change_type) VALUES (?, ?, ?)",
+			agent.RunID, change.Path, change.ChangeType,
+		); err != nil {
+			log.Printf("run tracking: failed to insert file change: %v", err)
+		}
 	}
 }
