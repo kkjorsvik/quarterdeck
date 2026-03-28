@@ -22,6 +22,8 @@ type Agent struct {
 	Status       AgentStatus `json:"status"`
 	TaskDesc     string      `json:"taskDescription"`
 	PTYSessionID string      `json:"ptySessionId"`
+	WorkDir      string      `json:"workDir"`
+	BaseCommit   string      `json:"baseCommit"`
 	StartedAt    time.Time   `json:"startedAt"`
 	ExitCode     *int        `json:"exitCode"`
 }
