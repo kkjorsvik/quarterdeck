@@ -28,7 +28,7 @@ export interface SessionInfo {
 }
 
 // Layout types
-export type PaneType = 'terminal' | 'editor' | 'settings' | 'runHistory' | 'review' | 'workingTree';
+export type PaneType = 'terminal' | 'editor' | 'settings' | 'runHistory' | 'review' | 'workingTree' | 'branch' | 'conflicts' | 'gitLog';
 export type SplitDirection = 'horizontal' | 'vertical';
 
 export interface PanelTab {
@@ -151,5 +151,54 @@ export interface FileDiff {
   filePath: string;
   original: string;
   modified: string;
+  changeType: string;
+}
+
+// Git integration types
+export interface FileStatus {
+  path: string;
+  status: 'modified' | 'staged' | 'untracked' | 'deleted' | 'renamed' | 'conflicted';
+  isStaged: boolean;
+}
+
+export interface Worktree {
+  path: string;
+  branch: string;
+  isMain: boolean;
+  commitSha: string;
+}
+
+export interface Branch {
+  name: string;
+  commitSha: string;
+  commitMsg: string;
+  isCurrent: boolean;
+  isWorktree: boolean;
+  aheadBehind: string;
+}
+
+export interface MergeResult {
+  success: boolean;
+  hasConflict: boolean;
+  message: string;
+  conflictFiles: string[];
+}
+
+export interface CommitInfo {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  agentRun: number | null;
+}
+
+export interface StashEntry {
+  index: number;
+  message: string;
+  date: string;
+}
+
+export interface FileChange {
+  path: string;
   changeType: string;
 }
