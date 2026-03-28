@@ -2,7 +2,6 @@ package ws
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -57,10 +56,7 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) 
 			for {
 				n, err := sess.Read(buf)
 				if err != nil {
-					if err != io.EOF {
-						log.Printf("pty read error: %v", err)
-					}
-					break
+					break // EOF or PTY closed — normal end of session
 				}
 				if err := conn.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
 					return
