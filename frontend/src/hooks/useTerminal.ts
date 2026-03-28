@@ -2,7 +2,6 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { useBackgroundTerminalStore } from '../stores/backgroundTerminalStore';
 
 interface UseTerminalOptions {
   workDir: string;
@@ -207,23 +206,12 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
     return () => {
       observer.disconnect();
       if (!detachedRef.current) {
-        if (options.existingSessionId && socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-          // Agent terminal: move WS to background store instead of closing it
-          // This preserves the connection and buffers output for replay on remount
-          useBackgroundTerminalStore.getState().detach(
-            options.existingSessionId,
-            0, // projectId not critical here — used for activity indicators
-            socketRef.current,
-            'agent' // command label
-          );
-        } else {
-          if (socketRef.current) {
-            socketRef.current.close();
-          }
-          // Don't kill the PTY if this is an agent terminal — the agent manager owns the lifecycle
-          if (sessionIdRef.current && !options.existingSessionId) {
-            window.go.main.App.CloseTerminal(sessionIdRef.current).catch(() => {});
-          }
+        // Close WebSocket (but don't kill PTY for agent terminals)
+        if (socketRef.current) {
+          socketRef.current.close();
+        }
+        if (sessionIdRef.current && !options.existingSessionId) {
+          window.go.main.App.CloseTerminal(sessionIdRef.current).catch(() => {});
         }
       }
       // Always dispose xterm.js instance (DOM cleanup)
