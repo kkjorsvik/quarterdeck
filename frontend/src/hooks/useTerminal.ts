@@ -195,7 +195,8 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         if (socketRef.current) {
           socketRef.current.close();
         }
-        if (sessionIdRef.current) {
+        // Don't kill the PTY if this is an agent terminal — the agent manager owns the lifecycle
+        if (sessionIdRef.current && !options.existingSessionId) {
           window.go.main.App.CloseTerminal(sessionIdRef.current).catch(() => {});
         }
       }

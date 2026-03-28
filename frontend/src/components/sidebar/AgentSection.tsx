@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAgentStore } from '../../stores/agentStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useOverlayStore } from '../../stores/overlayStore';
@@ -7,8 +7,7 @@ import { ContextMenu, type ContextMenuItem } from './ContextMenu';
 
 export function AgentSection() {
   const agents = useAgentStore(s => s.agents);
-  const getActiveAgents = useAgentStore(s => s.getActiveAgents);
-  const getAttentionAgents = useAgentStore(s => s.getAttentionAgents);
+  const removeAgent = useAgentStore(s => s.removeAgent);
   const projects = useProjectStore(s => s.projects);
   const switchProject = useProjectStore(s => s.switchProject);
   const openOverlay = useOverlayStore(s => s.open);
@@ -24,9 +23,9 @@ export function AgentSection() {
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, []);
 
-  const allAgents = Array.from(agents.values());
-  const activeAgents = getActiveAgents();
-  const attentionAgents = getAttentionAgents();
+  const allAgents = useMemo(() => Array.from(agents.values()), [agents]);
+  const activeAgents = useMemo(() => allAgents.filter(a => ['starting', 'working', 'needs_input'].includes(a.status)), [allAgents]);
+  const attentionAgents = useMemo(() => allAgents.filter(a => a.status === 'needs_input' || a.status === 'error'), [allAgents]);
 
   const handleAgentClick = useCallback((agent: { projectId: number }) => {
     // Switch to agent's project (best effort focus terminal tab)
@@ -148,20 +147,23 @@ export function AgentSection() {
       )}
 
       {/* Context menu */}
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          items={[
-            {
-              label: 'Stop Agent',
-              onClick: () => handleStopAgent(contextMenu.agentId),
-              danger: true,
-            } as ContextMenuItem,
-          ]}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
+      {contextMenu && (() => {
+        const agent = agents.get(contextMenu.agentId);
+        const isDone = agent?.status === 'done' || agent?.status === 'error';
+        const items: ContextMenuItem[] = [];
+        if (!isDone) {
+          items.push({ label: 'Stop Agent', onClick: () => handleStopAgent(contextMenu.agentId), danger: true });
+        }
+        items.push({ label: 'Dismiss', onClick: () => removeAgent(contextMenu.agentId) });
+        return (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            items={items}
+            onClose={() => setContextMenu(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
