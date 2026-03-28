@@ -38,7 +38,7 @@ export function Pane({ node }: PaneProps) {
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {node.tabs.map((tab, i) => (
           <div
-            key={tab.id}
+            key={tab.terminalId ? `${tab.id}-${tab.terminalId}` : tab.id}
             style={{
               display: i === node.activeTabIndex ? 'flex' : 'none',
               width: '100%',

@@ -119,6 +119,14 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
         });
 
         term.focus();
+        // Trigger resize to force TUI repaint after buffer replay
+        if (options.existingSessionId) {
+          setTimeout(() => {
+            const cols = term.cols;
+            const rows = term.rows;
+            window.go.main.App.ResizeTerminal(options.existingSessionId!, cols, rows).catch(() => {});
+          }, 50);
+        }
         options.onReady?.();
         return; // Skip normal connect flow
       }

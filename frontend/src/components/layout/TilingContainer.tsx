@@ -9,7 +9,7 @@ function RenderNode({ node }: { node: LayoutNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   if (node.type === 'leaf') {
-    return <Pane node={node} />;
+    return <Pane key={node.id} node={node} />;
   }
 
   const isHorizontal = node.direction === 'horizontal';
@@ -29,7 +29,7 @@ function RenderNode({ node }: { node: LayoutNode }) {
       }}
     >
       <div style={{ flex: `0 0 calc(${firstSize} - 2px)`, minWidth: 0, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        <RenderNode node={node.children[0]} />
+        <RenderNode key={node.children[0].id} node={node.children[0]} />
       </div>
       <Divider
         direction={node.direction}
@@ -37,7 +37,7 @@ function RenderNode({ node }: { node: LayoutNode }) {
         onResize={(ratio) => resizeSplit(node.id, ratio)}
       />
       <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        <RenderNode node={node.children[1]} />
+        <RenderNode key={node.children[1].id} node={node.children[1]} />
       </div>
     </div>
   );
