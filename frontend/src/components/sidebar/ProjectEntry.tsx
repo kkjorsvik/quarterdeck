@@ -5,6 +5,7 @@ import { ContextMenu, type ContextMenuItem } from './ContextMenu';
 import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { useProjectStore } from '../../stores/projectStore';
+import { useAgentStore } from '../../stores/agentStore';
 
 interface ProjectEntryProps {
   project: Project;
@@ -39,27 +40,41 @@ export function ProjectEntry({
   const bgHasNewOutput = useBackgroundTerminalStore(s => s.hasNewOutput(project.id));
   const bgOutputTimestamp = useBackgroundTerminalStore(s => s.getProjectOutputTimestamp(project.id));
   const fgSessions = useTerminalStore(s => s.getSessionsByProject(project.id));
+  const projectAgents = useAgentStore(s => s.getProjectAgents(project.id));
 
   const color = getProjectColor(project.sortOrder, project.color || null);
 
   // Activity dot logic
   const getActivityDot = useCallback(() => {
     if (isActive) return null;
-    if (bgTerminals.length === 0) return null;
 
-    const allExited = bgTerminals.every(t => t.exitInfo !== null);
-    if (allExited) return { color: '#6b7280', bright: false }; // gray
-
-    if (bgHasNewOutput && bgOutputTimestamp) {
-      const age = Date.now() - bgOutputTimestamp;
-      if (age < 30000) {
-        return { color: '#facc15', bright: true }; // bright yellow
+    // Agent-based indicators (priority)
+    if (projectAgents.length > 0) {
+      if (projectAgents.some(a => a.status === 'error')) {
+        return { color: '#f87171', bright: true };
       }
-      return { color: '#ca8a04', bright: false }; // dimmer yellow
+      if (projectAgents.some(a => a.status === 'needs_input')) {
+        return { color: '#facc15', bright: true };
+      }
+      if (projectAgents.every(a => a.status === 'done')) {
+        return { color: '#34d399', bright: false };
+      }
+      if (projectAgents.some(a => a.status === 'working' || a.status === 'starting')) {
+        return { color: '#34d399', bright: false };
+      }
     }
 
+    // Fallback: Phase 3 terminal-based indicators
+    if (bgTerminals.length === 0) return null;
+    const allExited = bgTerminals.every(t => t.exitInfo !== null);
+    if (allExited) return { color: '#6b7280', bright: false };
+    if (bgHasNewOutput && bgOutputTimestamp) {
+      const age = Date.now() - bgOutputTimestamp;
+      if (age < 30000) return { color: '#facc15', bright: true };
+      return { color: '#ca8a04', bright: false };
+    }
     return null;
-  }, [isActive, bgTerminals, bgHasNewOutput, bgOutputTimestamp]);
+  }, [isActive, projectAgents, bgTerminals, bgHasNewOutput, bgOutputTimestamp]);
 
   // Terminal count
   const terminalCount = isActive ? fgSessions.length : bgTerminals.length;

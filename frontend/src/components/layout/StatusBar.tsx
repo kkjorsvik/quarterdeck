@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { useAgentStore } from '../../stores/agentStore';
 import { getProjectColor } from '../../lib/projectColors';
 import type { LayoutNode } from '../../lib/types';
 
@@ -31,6 +32,12 @@ export function StatusBar() {
     ? getProjectColor(activeProject.sortOrder, activeProject.color || null)
     : undefined;
 
+  const allAgents = useAgentStore(s => s.agents);
+  const agentList = Array.from(allAgents.values());
+  const activeAgents = agentList.filter(a => ['starting', 'working', 'needs_input'].includes(a.status));
+  const needsInputCount = agentList.filter(a => a.status === 'needs_input').length;
+  const hasError = agentList.some(a => a.status === 'error');
+
   const termCount = countTerminals(root);
   const activeTab = focusedLeaf?.tabs[focusedLeaf.activeTabIndex];
   const currentFile = activeTab?.type === 'editor' ? activeTab.filePath?.split('/').pop() : null;
@@ -56,6 +63,14 @@ export function StatusBar() {
       )}
       <span style={{ flex: 1 }} />
       {currentFile && <span>{currentFile}</span>}
+      {activeAgents.length > 0 && (
+        <span style={{
+          color: hasError ? '#f87171' : needsInputCount > 0 ? '#facc15' : 'var(--text-secondary)',
+        }}>
+          {activeAgents.length} agent{activeAgents.length !== 1 ? 's' : ''}
+          {needsInputCount > 0 && ` (${needsInputCount} needs input)`}
+        </span>
+      )}
       <span>⬚ {termCount}</span>
     </div>
   );
