@@ -152,12 +152,21 @@ export function useTerminal(containerRef: React.RefObject<HTMLDivElement | null>
 
         socket.onopen = () => {
           term.focus();
-          // For reconnecting to an existing session (agent), send a resize to trigger
-          // the running TUI app to repaint its full screen into the new terminal
+          // For reconnecting to an existing session (agent), force a resize to trigger
+          // the running TUI app to repaint its full screen into the new terminal.
+          // We need to: 1) wait for fitAddon to size the terminal, 2) send a slightly
+          // different size then the real size to guarantee SIGWINCH fires.
           if (isReconnect) {
             setTimeout(() => {
-              window.go.main.App.ResizeTerminal(id, cols, rows).catch(() => {});
-            }, 50);
+              fitAddon.fit();
+              const realCols = term.cols;
+              const realRows = term.rows;
+              // Send a slightly different size first to guarantee SIGWINCH
+              window.go.main.App.ResizeTerminal(id, realCols - 1, realRows).catch(() => {});
+              setTimeout(() => {
+                window.go.main.App.ResizeTerminal(id, realCols, realRows).catch(() => {});
+              }, 50);
+            }, 200);
           }
           options.onReady?.();
         };
