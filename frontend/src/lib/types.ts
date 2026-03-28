@@ -28,7 +28,7 @@ export interface SessionInfo {
 }
 
 // Layout types
-export type PaneType = 'terminal' | 'editor' | 'settings';
+export type PaneType = 'terminal' | 'editor' | 'settings' | 'runHistory' | 'review' | 'workingTree';
 export type SplitDirection = 'horizontal' | 'vertical';
 
 export interface PanelTab {
@@ -38,6 +38,7 @@ export interface PanelTab {
   terminalId?: string;
   filePath?: string;
   projectId?: number;
+  runId?: number;
 }
 
 export interface LeafNode {
@@ -118,4 +119,37 @@ export interface AgentState {
 export interface SpawnResult {
   agentId: string;
   ptySessionId: string;
+}
+
+// Review types
+export interface AgentRunWithStats {
+  id: number;
+  projectId: number;
+  agentType: string;
+  taskDescription: string;
+  baseCommit: string;
+  endCommit: string;
+  status: string;
+  startedAt: string;
+  completedAt: string;
+  agentId: string;
+  fileCount: number;
+  totalAdditions: number;
+  totalDeletions: number;
+}
+
+export interface RunFileChange {
+  id: number;
+  runId: number;
+  filePath: string;
+  changeType: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface FileDiff {
+  filePath: string;
+  original: string;
+  modified: string;
+  changeType: string;
 }
