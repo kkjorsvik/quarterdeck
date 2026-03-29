@@ -24,7 +24,7 @@ func setupTestEnv(t *testing.T) (*db.Store, *pty.Manager) {
 
 func TestManagerSpawnAndList(t *testing.T) {
 	store, ptyMgr := setupTestEnv(t)
-	mgr := NewManager(ptyMgr, store, func(data []byte) {})
+	mgr := NewManager(ptyMgr, store, func(data []byte) {}, nil)
 
 	agent, err := mgr.Spawn(1, "custom", "test task", "/tmp", "echo hello")
 	if err != nil {
@@ -55,7 +55,7 @@ func TestManagerSpawnAndList(t *testing.T) {
 
 func TestManagerSpawnCommandNotFound(t *testing.T) {
 	store, ptyMgr := setupTestEnv(t)
-	mgr := NewManager(ptyMgr, store, func(data []byte) {})
+	mgr := NewManager(ptyMgr, store, func(data []byte) {}, nil)
 
 	_, err := mgr.Spawn(1, "custom", "test", "/tmp", "nonexistent_command_xyz")
 	if err == nil {
@@ -65,7 +65,7 @@ func TestManagerSpawnCommandNotFound(t *testing.T) {
 
 func TestManagerStop(t *testing.T) {
 	store, ptyMgr := setupTestEnv(t)
-	mgr := NewManager(ptyMgr, store, func(data []byte) {})
+	mgr := NewManager(ptyMgr, store, func(data []byte) {}, nil)
 
 	agent, err := mgr.Spawn(1, "custom", "long task", "/tmp", "sleep 60")
 	if err != nil {
@@ -90,7 +90,7 @@ func TestManagerStop(t *testing.T) {
 
 func TestManagerListByProject(t *testing.T) {
 	store, ptyMgr := setupTestEnv(t)
-	mgr := NewManager(ptyMgr, store, func(data []byte) {})
+	mgr := NewManager(ptyMgr, store, func(data []byte) {}, nil)
 
 	mgr.Spawn(1, "custom", "task 1", "/tmp", "echo a")
 	mgr.Spawn(2, "custom", "task 2", "/tmp", "echo b")

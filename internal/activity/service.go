@@ -45,7 +45,7 @@ func (s *Service) Record(eventType, agentID string, projectID int64, title, deta
 		CreatedAt: time.Now(),
 	}
 
-	wrapper := map[string]interface{}{
+	wrapper := map[string]any{
 		"type":  "activity",
 		"event": evt,
 	}

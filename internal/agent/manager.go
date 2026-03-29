@@ -291,7 +291,7 @@ func (m *Manager) onStatusChange(agent *Agent, status AgentStatus) {
 	}
 
 	// Broadcast event
-	event := map[string]interface{}{
+	event := map[string]any{
 		"type":    "agent_status",
 		"agentId": agent.ID,
 		"status":  string(status),
