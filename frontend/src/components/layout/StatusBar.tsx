@@ -3,6 +3,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { useAgentStore } from '../../stores/agentStore';
 import { getProjectColor } from '../../lib/projectColors';
+import { StashPanel } from '../git/StashPanel';
 import type { LayoutNode } from '../../lib/types';
 
 function countTerminals(node: LayoutNode): number {
@@ -19,6 +20,9 @@ export function StatusBar() {
   const getLeafById = useLayoutStore(s => s.getLeafById);
   const focusedLeaf = getLeafById(focusedPaneId);
   const [branch, setBranch] = useState('');
+  const [showStash, setShowStash] = useState(false);
+  const gitStatusMap = useProjectStore(s => s.gitStatusMap);
+  const activeProjectId = useProjectStore(s => s.activeProjectId);
 
   useEffect(() => {
     if (activeProject?.path) {
@@ -63,6 +67,15 @@ export function StatusBar() {
       {branch && (
         <span>⎇ {branch}</span>
       )}
+      {gitStatusMap.size > 0 && (
+        <span
+          onClick={() => setShowStash(true)}
+          style={{ cursor: 'pointer', color: '#fb923c', fontSize: '11px' }}
+          title="Stash changes"
+        >
+          {gitStatusMap.size} changed
+        </span>
+      )}
       <span style={{ flex: 1 }} />
       {currentFile && <span>{currentFile}</span>}
       {activeAgents.length > 0 && (
@@ -74,6 +87,9 @@ export function StatusBar() {
         </span>
       )}
       <span>⬚ {termCount}</span>
+      {showStash && activeProjectId && (
+        <StashPanel projectId={activeProjectId} onClose={() => setShowStash(false)} />
+      )}
     </div>
   );
 }
