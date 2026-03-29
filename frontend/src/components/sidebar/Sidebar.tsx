@@ -5,6 +5,7 @@ import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore
 import { AddProjectModal } from './AddProjectModal';
 import { ProjectEntry } from './ProjectEntry';
 import { AgentSection } from './AgentSection';
+import { NotificationBell } from './NotificationBell';
 
 export function Sidebar() {
   const projects = useProjectStore(s => s.projects);
@@ -141,6 +142,10 @@ export function Sidebar() {
       {/* Agent section */}
       <AgentSection />
 
+      {/* Notification bell */}
+      <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0, marginTop: 'auto' }}>
+        <NotificationBell />
+      </div>
 
       <AddProjectModal />
     </div>

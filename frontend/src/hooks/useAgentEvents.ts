@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useAgentStore } from '../stores/agentStore';
 import { useActivityStore } from '../stores/activityStore';
+import { useNotificationStore } from '../stores/notificationStore';
 import type { AgentStatusType } from '../lib/types';
 
 export function useAgentEvents(wsPort: number | null) {
   const updateStatus = useAgentStore(s => s.updateStatus);
   const addAgent = useAgentStore(s => s.addAgent);
   const addActivity = useActivityStore(s => s.addEvent);
+  const addNotification = useNotificationStore(s => s.add);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelayRef = useRef(1000);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -39,6 +41,15 @@ export function useAgentEvents(wsPort: number | null) {
           const msg = JSON.parse(event.data);
           if (msg.type === 'agent_status') {
             updateStatus(msg.agentId, msg.status as AgentStatusType, msg.exitCode);
+
+            const status = msg.status as AgentStatusType;
+            if (status === 'needs_input') {
+              addNotification({ type: 'warning', title: 'Agent needs input', agentId: msg.agentId });
+            } else if (status === 'error') {
+              addNotification({ type: 'error', title: 'Agent errored', agentId: msg.agentId });
+            } else if (status === 'done') {
+              addNotification({ type: 'success', title: 'Agent completed', agentId: msg.agentId });
+            }
           }
           if (msg.type === 'activity' && msg.event) {
             addActivity(msg.event);
@@ -61,5 +72,5 @@ export function useAgentEvents(wsPort: number | null) {
       if (wsRef.current) wsRef.current.close();
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     };
-  }, [wsPort, updateStatus, addActivity]);
+  }, [wsPort, updateStatus, addActivity, addNotification]);
 }
