@@ -43,6 +43,15 @@ export function AgentCard({ agent, projectName, projectColor, onClick, onContext
   const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const statusCfg = STATUS_CONFIG[agent.status] || STATUS_CONFIG.error;
 
+  const handleRerun = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await window.go.main.App.RerunAgent(agent.id);
+    } catch {
+      // Silently fail
+    }
+  }, [agent.id]);
+
   const handleReview = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -142,33 +151,58 @@ export function AgentCard({ agent, projectName, projectColor, onClick, onContext
         </div>
       </div>
 
-      {/* Review button for done agents */}
-      {agent.status === 'done' && (
-        <button
-          onClick={handleReview}
-          title="Review changes"
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            borderRadius: '3px',
-            padding: '2px 6px',
-            fontSize: '10px',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            flexShrink: 0,
-            alignSelf: 'center',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent, #3b82f6)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent, #3b82f6)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-          }}
-        >
-          Review
-        </button>
+      {/* Action buttons for done/error agents */}
+      {(agent.status === 'done' || agent.status === 'error') && (
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignSelf: 'center' }}>
+          <button
+            onClick={handleRerun}
+            title="Re-run agent with same parameters"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: '3px',
+              padding: '2px 6px',
+              fontSize: '10px',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent, #3b82f6)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent, #3b82f6)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+            }}
+          >
+            Re-run
+          </button>
+          {agent.status === 'done' && (
+            <button
+              onClick={handleReview}
+              title="Review changes"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: '3px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent, #3b82f6)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent, #3b82f6)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+              }}
+            >
+              Review
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

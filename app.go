@@ -198,6 +198,18 @@ func (a *App) SpawnAgent(projectID int64, agentType, taskDesc, workDir, customCm
 	}, nil
 }
 
+func (a *App) RerunAgent(agentID string) (*agentPkg.SpawnResult, error) {
+	agent := a.agentMgr.Get(agentID)
+	if agent == nil {
+		return nil, fmt.Errorf("agent not found: %s", agentID)
+	}
+	if agent.SpawnParams == nil {
+		return nil, fmt.Errorf("no spawn params recorded for agent")
+	}
+	p := agent.SpawnParams
+	return a.SpawnAgent(p.ProjectID, p.AgentType, p.TaskDesc, p.WorkDir, p.CustomCmd)
+}
+
 func (a *App) StopAgent(agentID string) error {
 	return a.agentMgr.Stop(agentID)
 }

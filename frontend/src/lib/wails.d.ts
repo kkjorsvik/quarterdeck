@@ -1,7 +1,7 @@
 // Type declarations for Wails Go bindings
 // These are auto-generated at runtime but we need types for development
 
-import type { Project, FileEntry, AgentRunWithStats, RunFileChange, FileDiff } from './types';
+import type { Project, FileEntry, AgentRunWithStats, RunFileChange, FileDiff, SpawnResult } from './types';
 
 declare global {
   interface Window {
@@ -32,6 +32,7 @@ declare global {
           CommitReviewedChanges(projectId: number, message: string, filePaths: string[], push: boolean): Promise<string>;
           GetWorkingTreeChanges(projectId: number): Promise<RunFileChange[]>;
           GetWorkingTreeFileDiff(projectId: number, filePath: string): Promise<FileDiff>;
+          RerunAgent(agentId: string): Promise<SpawnResult>;
         };
       };
     };

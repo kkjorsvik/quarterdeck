@@ -178,6 +178,10 @@ export function RevertFile(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['RevertFile'](arg1, arg2, arg3, arg4);
 }
 
+export function RerunAgent(arg1) {
+  return window['go']['main']['App']['RerunAgent'](arg1);
+}
+
 export function SaveLayout(arg1, arg2) {
   return window['go']['main']['App']['SaveLayout'](arg1, arg2);
 }

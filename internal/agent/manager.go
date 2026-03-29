@@ -141,6 +141,13 @@ func (m *Manager) Spawn(projectID int64, agentType, taskDesc, workDir, customCmd
 		WorkDir:      workDir,
 		BaseCommit:   baseCommit,
 		StartedAt:    time.Now(),
+		SpawnParams: &SpawnParams{
+			ProjectID: projectID,
+			AgentType: agentType,
+			TaskDesc:  taskDesc,
+			WorkDir:   workDir,
+			CustomCmd: customCmd,
+		},
 	}
 	_ = icon // stored in config, not on agent struct
 

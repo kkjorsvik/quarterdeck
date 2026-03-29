@@ -12,20 +12,29 @@ const (
 	AgentStatusError      AgentStatus = "error"
 )
 
+type SpawnParams struct {
+	ProjectID int64  `json:"projectId"`
+	AgentType string `json:"agentType"`
+	TaskDesc  string `json:"taskDescription"`
+	WorkDir   string `json:"workDir"`
+	CustomCmd string `json:"customCmd"`
+}
+
 type Agent struct {
-	ID           string      `json:"id"`
-	RunID        int64       `json:"runId"`
-	ProjectID    int64       `json:"projectId"`
-	Type         string      `json:"type"`
-	DisplayName  string      `json:"displayName"`
-	Command      string      `json:"command"`
-	Status       AgentStatus `json:"status"`
-	TaskDesc     string      `json:"taskDescription"`
-	PTYSessionID string      `json:"ptySessionId"`
-	WorkDir      string      `json:"workDir"`
-	BaseCommit   string      `json:"baseCommit"`
-	StartedAt    time.Time   `json:"startedAt"`
-	ExitCode     *int        `json:"exitCode"`
+	ID           string       `json:"id"`
+	RunID        int64        `json:"runId"`
+	ProjectID    int64        `json:"projectId"`
+	Type         string       `json:"type"`
+	DisplayName  string       `json:"displayName"`
+	Command      string       `json:"command"`
+	Status       AgentStatus  `json:"status"`
+	TaskDesc     string       `json:"taskDescription"`
+	PTYSessionID string       `json:"ptySessionId"`
+	WorkDir      string       `json:"workDir"`
+	BaseCommit   string       `json:"baseCommit"`
+	StartedAt    time.Time    `json:"startedAt"`
+	ExitCode     *int         `json:"exitCode"`
+	SpawnParams  *SpawnParams `json:"spawnParams"`
 }
 
 type AgentConfig struct {
