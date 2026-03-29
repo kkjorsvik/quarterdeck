@@ -11,6 +11,7 @@ import { WorkingTreeDiff } from '../review/WorkingTreeDiff';
 import { BranchPanel } from '../git/BranchPanel';
 import { ConflictPanel } from '../git/ConflictPanel';
 import { GitLog } from '../git/GitLog';
+import { AgentDashboard } from '../dashboard/AgentDashboard';
 
 interface PaneProps {
   node: LeafNode;
@@ -63,6 +64,8 @@ export function Pane({ node }: PaneProps) {
               <ConflictPanel projectId={tab.projectId} />
             ) : tab.type === 'gitLog' && tab.projectId ? (
               <GitLog projectId={tab.projectId} />
+            ) : tab.type === 'dashboard' ? (
+              <AgentDashboard />
             ) : (
               <div style={{ padding: 16, color: '#888' }}>Unknown panel type</div>
             )}

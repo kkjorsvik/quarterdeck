@@ -120,6 +120,10 @@ function App() {
         e.preventDefault();
         if (activeProjectId) addTab(focusedPaneId, { type: 'gitLog', title: 'Git Log', projectId: activeProjectId });
         break;
+      case 'F':
+        e.preventDefault();
+        addTab(focusedPaneId, { type: 'dashboard', title: 'Agent Dashboard' });
+        break;
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');
