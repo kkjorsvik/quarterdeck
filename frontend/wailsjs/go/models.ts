@@ -171,6 +171,153 @@ export namespace filetree {
 
 }
 
+export namespace git {
+	
+	export class Branch {
+	    name: string;
+	    commitSha: string;
+	    commitMsg: string;
+	    isCurrent: boolean;
+	    isWorktree: boolean;
+	    aheadBehind: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Branch(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.commitSha = source["commitSha"];
+	        this.commitMsg = source["commitMsg"];
+	        this.isCurrent = source["isCurrent"];
+	        this.isWorktree = source["isWorktree"];
+	        this.aheadBehind = source["aheadBehind"];
+	    }
+	}
+	export class CommitInfo {
+	    sha: string;
+	    message: string;
+	    author: string;
+	    date: string;
+	    agentRun?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CommitInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sha = source["sha"];
+	        this.message = source["message"];
+	        this.author = source["author"];
+	        this.date = source["date"];
+	        this.agentRun = source["agentRun"];
+	    }
+	}
+	export class FileChange {
+	    Path: string;
+	    ChangeType: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Path = source["Path"];
+	        this.ChangeType = source["ChangeType"];
+	    }
+	}
+	export class FileDiff {
+	    filePath: string;
+	    original: string;
+	    modified: string;
+	    changeType: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileDiff(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.original = source["original"];
+	        this.modified = source["modified"];
+	        this.changeType = source["changeType"];
+	    }
+	}
+	export class FileStatus {
+	    path: string;
+	    status: string;
+	    isStaged: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.status = source["status"];
+	        this.isStaged = source["isStaged"];
+	    }
+	}
+	export class MergeResult {
+	    success: boolean;
+	    hasConflict: boolean;
+	    message: string;
+	    conflictFiles: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MergeResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.hasConflict = source["hasConflict"];
+	        this.message = source["message"];
+	        this.conflictFiles = source["conflictFiles"];
+	    }
+	}
+	export class StashEntry {
+	    index: number;
+	    message: string;
+	    date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StashEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.index = source["index"];
+	        this.message = source["message"];
+	        this.date = source["date"];
+	    }
+	}
+	export class Worktree {
+	    path: string;
+	    branch: string;
+	    isMain: boolean;
+	    commitSha: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Worktree(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.branch = source["branch"];
+	        this.isMain = source["isMain"];
+	        this.commitSha = source["commitSha"];
+	    }
+	}
+
+}
+
 export namespace project {
 	
 	export class Project {
