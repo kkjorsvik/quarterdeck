@@ -9,6 +9,9 @@ import { ProjectSettings } from '../settings/ProjectSettings';
 import { RunHistory } from '../review/RunHistory';
 import { RunReview } from '../review/RunReview';
 import { WorkingTreeDiff } from '../review/WorkingTreeDiff';
+import { BranchPanel } from '../git/BranchPanel';
+import { ConflictPanel } from '../git/ConflictPanel';
+import { GitLog } from '../git/GitLog';
 
 interface PaneProps {
   node: LeafNode;
@@ -55,6 +58,12 @@ export function Pane({ node }: PaneProps) {
               <RunReview runId={tab.runId} projectId={tab.projectId} />
             ) : tab.type === 'workingTree' && tab.projectId ? (
               <WorkingTreeDiff projectId={tab.projectId} />
+            ) : tab.type === 'branch' && tab.projectId ? (
+              <BranchPanel projectId={tab.projectId} />
+            ) : tab.type === 'conflicts' && tab.projectId ? (
+              <ConflictPanel projectId={tab.projectId} />
+            ) : tab.type === 'gitLog' && tab.projectId ? (
+              <GitLog projectId={tab.projectId} />
             ) : (
               <MonacoEditor filePath={tab.filePath} />
             )}
