@@ -14,11 +14,12 @@ type Server struct {
 	eventHub       *EventHub
 	ptyMgr         *ptyPkg.Manager
 	detectorLookup DetectorLookup
+	logger         PTYLogger
 	listener       net.Listener
 	port           int
 }
 
-func NewServer(ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) (*Server, error) {
+func NewServer(ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup, logger PTYLogger) (*Server, error) {
 	hub := NewHub()
 	eventHub := NewEventHub()
 
@@ -30,7 +31,7 @@ func NewServer(ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) (*Server, 
 	port := listener.Addr().(*net.TCPAddr).Port
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ws/pty/", HandlePTY(hub, ptyMgr, detectorLookup))
+	mux.HandleFunc("/ws/pty/", HandlePTY(hub, ptyMgr, detectorLookup, logger))
 	mux.HandleFunc("/ws/events", eventHub.HandleEvents())
 
 	srv := &Server{
@@ -38,6 +39,7 @@ func NewServer(ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) (*Server, 
 		eventHub:       eventHub,
 		ptyMgr:         ptyMgr,
 		detectorLookup: detectorLookup,
+		logger:         logger,
 		listener:       listener,
 		port:           port,
 	}

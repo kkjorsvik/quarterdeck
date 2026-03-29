@@ -21,6 +21,13 @@ type ActivityRecorder interface {
 	RecordStateTransition(agentID, fromState, toState string) error
 }
 
+// PTYLogger manages per-session terminal output logging.
+type PTYLogger interface {
+	StartLogging(sessionID string) error
+	Write(sessionID string, data []byte)
+	StopLogging(sessionID string)
+}
+
 type Manager struct {
 	mu        sync.RWMutex
 	agents    map[string]*Agent
@@ -29,9 +36,10 @@ type Manager struct {
 	store     *db.Store
 	broadcast func([]byte)
 	activity  ActivityRecorder
+	ptyLogger PTYLogger
 }
 
-func NewManager(ptyMgr *pty.Manager, store *db.Store, broadcast func([]byte), activity ActivityRecorder) *Manager {
+func NewManager(ptyMgr *pty.Manager, store *db.Store, broadcast func([]byte), activity ActivityRecorder, ptyLogger PTYLogger) *Manager {
 	return &Manager{
 		agents:    make(map[string]*Agent),
 		detectors: make(map[string]*StateDetector),
@@ -39,6 +47,7 @@ func NewManager(ptyMgr *pty.Manager, store *db.Store, broadcast func([]byte), ac
 		store:     store,
 		broadcast: broadcast,
 		activity:  activity,
+		ptyLogger: ptyLogger,
 	}
 }
 
@@ -90,6 +99,13 @@ func (m *Manager) Spawn(projectID int64, agentType, taskDesc, workDir, customCmd
 	sessionID, err := m.ptyMgr.Create(command, args, workDir, 120, 30)
 	if err != nil {
 		return nil, fmt.Errorf("create pty session: %w", err)
+	}
+
+	// Start logging terminal output to disk
+	if m.ptyLogger != nil {
+		if err := m.ptyLogger.StartLogging(sessionID); err != nil {
+			log.Printf("failed to start PTY logging for %s: %v", sessionID, err)
+		}
 	}
 
 	// Create agent_runs DB row
@@ -234,6 +250,10 @@ func (m *Manager) watchExit(agent *Agent, detector *StateDetector, sess *pty.Ses
 	exitCode := sess.ExitCode
 	agent.ExitCode = &exitCode
 	detector.OnProcessExit(&exitCode)
+
+	if m.ptyLogger != nil {
+		m.ptyLogger.StopLogging(agent.PTYSessionID)
+	}
 }
 
 func (m *Manager) onStatusChange(agent *Agent, status AgentStatus) {

@@ -46,6 +46,10 @@ func (s *Store) Close() error {
 	return s.DB.Close()
 }
 
+func (s *Store) Path() string {
+	return s.path
+}
+
 func (s *Store) migrate() error {
 	// Create migration tracking table
 	_, err := s.DB.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (

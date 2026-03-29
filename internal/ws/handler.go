@@ -26,7 +26,12 @@ type exitedMessage struct {
 	ExitCode int    `json:"exitCode"`
 }
 
-func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) http.HandlerFunc {
+// PTYLogger writes PTY output to persistent storage.
+type PTYLogger interface {
+	Write(sessionID string, data []byte)
+}
+
+func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup, logger PTYLogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/ws/pty/"), "/")
 		if len(parts) == 0 || parts[0] == "" {
@@ -57,6 +62,9 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) 
 				n, err := sess.Read(buf)
 				if err != nil {
 					break // EOF or PTY closed — normal end of session
+				}
+				if logger != nil {
+					logger.Write(sessionID, buf[:n])
 				}
 				hub.Broadcast(sessionID, buf[:n], websocket.BinaryMessage)
 				if detectorLookup != nil {

@@ -27,6 +27,7 @@ type App struct {
 	layouts     *layout.Service
 	fileTree    *filetree.Service
 	ptyMgr      *ptyPkg.Manager
+	ptyLogger   *ptyPkg.Logger
 	agentMgr    *agentPkg.Manager
 	runService  *agentPkg.RunService
 	activitySvc *activity.Service
@@ -55,6 +56,15 @@ func (a *App) startup(ctx context.Context) {
 	a.fileTree = filetree.NewService()
 	a.ptyMgr = ptyPkg.NewManager()
 
+	// Initialize PTY logger for disk-based terminal output
+	logDir := filepath.Join(filepath.Dir(a.store.Path()), "logs")
+	ptyLogger, err := ptyPkg.NewLogger(logDir)
+	if err != nil {
+		fmt.Printf("warning: failed to create PTY logger: %v\n", err)
+	} else {
+		a.ptyLogger = ptyLogger
+	}
+
 	// Initialize activity service
 	a.activitySvc = activity.NewService(a.store.DB, func(data []byte) {
 		if a.wsServer != nil {
@@ -68,10 +78,10 @@ func (a *App) startup(ctx context.Context) {
 		if a.wsServer != nil {
 			a.wsServer.EventHub().Broadcast(data)
 		}
-	}, a.activitySvc)
+	}, a.activitySvc, a.ptyLogger)
 
 	// Start WebSocket server
-	wsSrv, err := ws.NewServer(a.ptyMgr, a.agentMgr)
+	wsSrv, err := ws.NewServer(a.ptyMgr, a.agentMgr, a.ptyLogger)
 	if err != nil {
 		panic("failed to start ws server: " + err.Error())
 	}
@@ -84,6 +94,9 @@ func (a *App) shutdown(ctx context.Context) {
 	}
 	if a.agentMgr != nil {
 		a.agentMgr.Shutdown()
+	}
+	if a.ptyLogger != nil {
+		a.ptyLogger.CloseAll()
 	}
 	if a.ptyMgr != nil {
 		a.ptyMgr.CloseAll()
@@ -195,6 +208,13 @@ func (a *App) ListAgents() []*agentPkg.Agent {
 
 func (a *App) ListProjectAgents(projectID int64) []*agentPkg.Agent {
 	return a.agentMgr.ListByProject(projectID)
+}
+
+func (a *App) GetAgentLog(ptySessionID string) (string, error) {
+	if a.ptyLogger == nil {
+		return "", fmt.Errorf("PTY logging not available")
+	}
+	return a.ptyLogger.ReadLog(ptySessionID)
 }
 
 // --- Review workflow bindings ---
