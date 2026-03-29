@@ -128,6 +128,10 @@ function App() {
         e.preventDefault();
         addTab(focusedPaneId, { type: 'activity', title: 'Activity' });
         break;
+      case 'M':
+        e.preventDefault();
+        addTab(focusedPaneId, { type: 'overview', title: 'Terminal Overview' });
+        break;
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');

@@ -13,6 +13,7 @@ import { ConflictPanel } from '../git/ConflictPanel';
 import { GitLog } from '../git/GitLog';
 import { AgentDashboard } from '../dashboard/AgentDashboard';
 import { ActivityFeed } from '../activity/ActivityFeed';
+import { MultiTerminalOverview } from '../overview/MultiTerminalOverview';
 
 interface PaneProps {
   node: LeafNode;
@@ -69,6 +70,8 @@ export function Pane({ node }: PaneProps) {
               <AgentDashboard />
             ) : tab.type === 'activity' ? (
               <ActivityFeed />
+            ) : tab.type === 'overview' ? (
+              <MultiTerminalOverview />
             ) : (
               <div style={{ padding: 16, color: '#888' }}>Unknown panel type</div>
             )}

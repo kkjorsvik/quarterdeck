@@ -8,33 +8,54 @@ import (
 
 type Hub struct {
 	mu    sync.RWMutex
-	conns map[string]*websocket.Conn
+	conns map[string]map[*websocket.Conn]bool // sessionID → set of connections
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		conns: make(map[string]*websocket.Conn),
+		conns: make(map[string]map[*websocket.Conn]bool),
 	}
 }
 
 func (h *Hub) Add(sessionID string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.conns[sessionID] = conn
+	if h.conns[sessionID] == nil {
+		h.conns[sessionID] = make(map[*websocket.Conn]bool)
+	}
+	h.conns[sessionID][conn] = true
 }
 
-func (h *Hub) Remove(sessionID string) {
+func (h *Hub) Remove(sessionID string, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if conn, ok := h.conns[sessionID]; ok {
+	if set, ok := h.conns[sessionID]; ok {
 		conn.Close()
-		delete(h.conns, sessionID)
+		delete(set, conn)
+		if len(set) == 0 {
+			delete(h.conns, sessionID)
+		}
 	}
 }
 
-func (h *Hub) Get(sessionID string) (*websocket.Conn, bool) {
+func (h *Hub) GetAll(sessionID string) []*websocket.Conn {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	conn, ok := h.conns[sessionID]
-	return conn, ok
+	set := h.conns[sessionID]
+	if len(set) == 0 {
+		return nil
+	}
+	out := make([]*websocket.Conn, 0, len(set))
+	for c := range set {
+		out = append(out, c)
+	}
+	return out
+}
+
+func (h *Hub) Broadcast(sessionID string, msg []byte, msgType int) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for c := range h.conns[sessionID] {
+		c.WriteMessage(msgType, msg)
+	}
 }

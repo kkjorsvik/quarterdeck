@@ -48,7 +48,7 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) 
 		}
 
 		hub.Add(sessionID, conn)
-		defer hub.Remove(sessionID)
+		defer hub.Remove(sessionID, conn)
 
 		// PTY -> WebSocket (write loop)
 		go func() {
@@ -58,9 +58,7 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) 
 				if err != nil {
 					break // EOF or PTY closed — normal end of session
 				}
-				if err := conn.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
-					return
-				}
+				hub.Broadcast(sessionID, buf[:n], websocket.BinaryMessage)
 				if detectorLookup != nil {
 					detectorLookup.FeedDetector(sessionID, buf[:n])
 				}
@@ -70,11 +68,11 @@ func HandlePTY(hub *Hub, ptyMgr *ptyPkg.Manager, detectorLookup DetectorLookup) 
 			case <-sess.Done:
 				exitMsg := exitedMessage{Type: "exited", ExitCode: sess.ExitCode}
 				data, _ := json.Marshal(exitMsg)
-				conn.WriteMessage(websocket.TextMessage, data)
+				hub.Broadcast(sessionID, data, websocket.TextMessage)
 			case <-time.After(time.Second):
 			}
-			conn.WriteMessage(websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+			hub.Broadcast(sessionID, closeMsg, websocket.CloseMessage)
 		}()
 
 		// WebSocket -> PTY (read loop)
