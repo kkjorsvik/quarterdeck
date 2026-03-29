@@ -9,6 +9,7 @@ import (
 
 	"fmt"
 
+	"github.com/kkjorsvik/quarterdeck/internal/activity"
 	agentPkg "github.com/kkjorsvik/quarterdeck/internal/agent"
 	"github.com/kkjorsvik/quarterdeck/internal/db"
 	"github.com/kkjorsvik/quarterdeck/internal/filetree"
@@ -20,15 +21,16 @@ import (
 )
 
 type App struct {
-	ctx      context.Context
-	store    *db.Store
-	projects *project.Service
-	layouts  *layout.Service
-	fileTree *filetree.Service
-	ptyMgr     *ptyPkg.Manager
-	agentMgr   *agentPkg.Manager
-	runService *agentPkg.RunService
-	wsServer   *ws.Server
+	ctx         context.Context
+	store       *db.Store
+	projects    *project.Service
+	layouts     *layout.Service
+	fileTree    *filetree.Service
+	ptyMgr      *ptyPkg.Manager
+	agentMgr    *agentPkg.Manager
+	runService  *agentPkg.RunService
+	activitySvc *activity.Service
+	wsServer    *ws.Server
 }
 
 func NewApp() *App {
@@ -53,13 +55,20 @@ func (a *App) startup(ctx context.Context) {
 	a.fileTree = filetree.NewService()
 	a.ptyMgr = ptyPkg.NewManager()
 
+	// Initialize activity service
+	a.activitySvc = activity.NewService(a.store.DB, func(data []byte) {
+		if a.wsServer != nil {
+			a.wsServer.EventHub().Broadcast(data)
+		}
+	})
+
 	// Initialize run service and agent manager
 	a.runService = agentPkg.NewRunService(a.store)
 	a.agentMgr = agentPkg.NewManager(a.ptyMgr, a.store, func(data []byte) {
 		if a.wsServer != nil {
 			a.wsServer.EventHub().Broadcast(data)
 		}
-	})
+	}, a.activitySvc)
 
 	// Start WebSocket server
 	wsSrv, err := ws.NewServer(a.ptyMgr, a.agentMgr)
@@ -200,6 +209,19 @@ func (a *App) GetRunFileChanges(runID int64) ([]agentPkg.RunFileChange, error) {
 
 func (a *App) GetRunByAgentID(agentID string) (*agentPkg.AgentRunWithStats, error) {
 	return a.runService.GetRunByAgentID(agentID)
+}
+
+// Activity event methods
+func (a *App) ListActivityEvents(limit, offset int) ([]activity.Event, error) {
+	return a.activitySvc.List(limit, offset)
+}
+
+func (a *App) ListProjectActivityEvents(projectID int64, limit int) ([]activity.Event, error) {
+	return a.activitySvc.ListByProject(projectID, limit)
+}
+
+func (a *App) GetAgentStateHistory(agentID string) ([]map[string]string, error) {
+	return a.activitySvc.GetStateHistory(agentID)
 }
 
 func (a *App) GetFileDiff(projectID int64, baseCommit, endCommit, filePath string) (*agentPkg.FileDiff, error) {

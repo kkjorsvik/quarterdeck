@@ -15,6 +15,12 @@ import (
 	"github.com/kkjorsvik/quarterdeck/internal/pty"
 )
 
+// ActivityRecorder records activity events and state transitions.
+type ActivityRecorder interface {
+	Record(eventType, agentID string, projectID int64, title, detail string) error
+	RecordStateTransition(agentID, fromState, toState string) error
+}
+
 type Manager struct {
 	mu        sync.RWMutex
 	agents    map[string]*Agent
@@ -22,15 +28,17 @@ type Manager struct {
 	ptyMgr    *pty.Manager
 	store     *db.Store
 	broadcast func([]byte)
+	activity  ActivityRecorder
 }
 
-func NewManager(ptyMgr *pty.Manager, store *db.Store, broadcast func([]byte)) *Manager {
+func NewManager(ptyMgr *pty.Manager, store *db.Store, broadcast func([]byte), activity ActivityRecorder) *Manager {
 	return &Manager{
 		agents:    make(map[string]*Agent),
 		detectors: make(map[string]*StateDetector),
 		ptyMgr:    ptyMgr,
 		store:     store,
 		broadcast: broadcast,
+		activity:  activity,
 	}
 }
 
@@ -139,6 +147,12 @@ func (m *Manager) Spawn(projectID int64, agentType, taskDesc, workDir, customCmd
 	// Start exit watcher with direct session reference
 	go m.watchExit(agent, detector, sess)
 
+	// Record activity event for spawn
+	if m.activity != nil {
+		title := fmt.Sprintf("Agent %s spawned", displayName)
+		m.activity.Record("agent_spawned", agentID, projectID, title, taskDesc)
+	}
+
 	return agent, nil
 }
 
@@ -224,8 +238,16 @@ func (m *Manager) watchExit(agent *Agent, detector *StateDetector, sess *pty.Ses
 
 func (m *Manager) onStatusChange(agent *Agent, status AgentStatus) {
 	m.mu.Lock()
+	prevStatus := agent.Status
 	agent.Status = status
 	m.mu.Unlock()
+
+	// Record state transition and activity event
+	if m.activity != nil {
+		m.activity.RecordStateTransition(agent.ID, string(prevStatus), string(status))
+		title := fmt.Sprintf("Agent %s status: %s", agent.DisplayName, string(status))
+		m.activity.Record("agent_status_change", agent.ID, agent.ProjectID, title, "")
+	}
 
 	// Update DB
 	if agent.RunID > 0 {
