@@ -19,7 +19,6 @@ interface LayoutState {
   cycleTab: (paneId: string, direction: 1 | -1) => void;
   getLeafById: (paneId: string) => LeafNode | undefined;
   getFocusedLeaf: () => LeafNode | undefined;
-  getEditorPaneId: () => string | undefined;
   setRoot: (root: LayoutNode) => void;
   createProjectLayout: () => void;
 }
@@ -86,14 +85,6 @@ function maxIdInTree(node: LayoutNode): number {
     maxIdInTree(node.children[0]),
     maxIdInTree(node.children[1])
   );
-}
-
-// Find the first leaf that has at least one editor tab, or the first leaf with no terminal-only tabs
-function findEditorLeaf(node: LayoutNode): LeafNode | undefined {
-  if (node.type === 'leaf') {
-    return node.tabs.some(t => t.type === 'editor') ? node : undefined;
-  }
-  return findEditorLeaf(node.children[0]) || findEditorLeaf(node.children[1]);
 }
 
 const initialPaneId = genId();
@@ -207,41 +198,21 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
     return findLeaf(get().root, get().focusedPaneId);
   },
 
-  getEditorPaneId: () => {
-    const editorLeaf = findEditorLeaf(get().root);
-    return editorLeaf?.id;
-  },
-
   setRoot: (root) => set(() => {
     nextId = maxIdInTree(root) + 1;
     return { root, focusedPaneId: findFirstLeaf(root) };
   }),
 
-  createProjectLayout: () => set(() => {
-    const editorPaneId = genId();
-    const terminalPaneId = genId();
-    return {
+  createProjectLayout: () => {
+    const id = String(maxIdInTree(get().root) + 1);
+    set({
       root: {
-        type: 'split',
-        id: genId(),
-        direction: 'horizontal' as SplitDirection,
-        ratio: 0.6,
-        children: [
-          {
-            type: 'leaf',
-            id: editorPaneId,
-            tabs: [{ id: genTabId(), type: 'editor' as PaneType, title: 'Editor' }],
-            activeTabIndex: 0,
-          } as LeafNode,
-          {
-            type: 'leaf',
-            id: terminalPaneId,
-            tabs: [{ id: genTabId(), type: 'terminal' as PaneType, title: 'Terminal' }],
-            activeTabIndex: 0,
-          } as LeafNode,
-        ],
-      } as SplitNode,
-      focusedPaneId: terminalPaneId,
-    };
-  }),
+        type: 'leaf' as const,
+        id,
+        tabs: [{ id: `term-${id}`, type: 'terminal' as const, title: 'Terminal' }],
+        activeTabIndex: 0,
+      },
+      focusedPaneId: id,
+    });
+  },
 }));

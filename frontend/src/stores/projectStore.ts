@@ -1,21 +1,8 @@
 import { create } from 'zustand';
-import type { Project, ProjectLayout, EditorTabSnapshot, TerminalPositionSnapshot, UpdateFields, OpenFile, FileStatus } from '../lib/types';
+import type { Project, ProjectLayout, TerminalPositionSnapshot, UpdateFields, FileStatus } from '../lib/types';
 import { useLayoutStore } from './layoutStore';
-import { useEditorStore } from './editorStore';
 import { useTerminalStore } from './terminalStore';
 import { useBackgroundTerminalStore } from './backgroundTerminalStore';
-
-const langMap: Record<string, string> = {
-  ts: 'typescript', tsx: 'typescriptreact', js: 'javascript', jsx: 'javascriptreact',
-  go: 'go', py: 'python', rs: 'rust', json: 'json', yaml: 'yaml', yml: 'yaml',
-  md: 'markdown', html: 'html', css: 'css', sql: 'sql', sh: 'shell',
-  toml: 'toml', xml: 'xml', svg: 'xml',
-};
-
-function detectLanguage(filePath: string): string {
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  return langMap[ext] || 'plaintext';
-}
 
 interface ProjectState {
   projects: Project[];
@@ -168,21 +155,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (state.activeProjectId === null) return;
 
     const layoutStore = useLayoutStore.getState();
-    const editorStore = useEditorStore.getState();
     const terminalStore = useTerminalStore.getState();
-
-    // Snapshot editor tabs
-    const editorTabs: EditorTabSnapshot[] = editorStore.openFiles.map((file) => ({
-      paneId: layoutStore.getEditorPaneId() || '',
-      filePath: file.path,
-      cursorPosition: { line: 1, column: 1 },
-      scrollPosition: 0,
-      dirtyContent: file.modified ? file.content : null,
-    }));
-
-    // Determine active editor tab file path
-    const activeFile = editorStore.openFiles[editorStore.activeFileIndex];
-    const activeEditorTab = activeFile ? activeFile.path : null;
 
     // Snapshot terminal positions
     const terminalPositions: TerminalPositionSnapshot[] = [];
@@ -200,8 +173,6 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const layout: ProjectLayout = {
       projectId: state.activeProjectId,
       tilingTree: layoutStore.root,
-      editorTabs,
-      activeEditorTab,
       terminalPositions,
     };
 
@@ -214,57 +185,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const state = get();
     const layout = state.projectLayouts.get(projectId);
     const layoutStore = useLayoutStore.getState();
-    const editorStore = useEditorStore.getState();
 
     if (!layout) {
       // No saved layout — create default
       layoutStore.createProjectLayout();
-      editorStore.replaceAll([], -1);
       return;
     }
 
     // Restore tiling tree
     layoutStore.setRoot(layout.tilingTree);
-
-    // Restore editor tabs
-    const files: OpenFile[] = [];
-    let activeIndex = -1;
-
-    for (const tab of layout.editorTabs) {
-      try {
-        let content: string;
-        if (tab.dirtyContent !== null) {
-          content = tab.dirtyContent;
-        } else {
-          content = await window.go.main.App.ReadFile(tab.filePath);
-        }
-
-        const name = tab.filePath.split('/').pop() || tab.filePath;
-        const language = detectLanguage(tab.filePath);
-
-        files.push({
-          path: tab.filePath,
-          name,
-          content,
-          language,
-          modified: tab.dirtyContent !== null,
-        });
-
-        if (tab.filePath === layout.activeEditorTab) {
-          activeIndex = files.length - 1;
-        }
-      } catch {
-        // Skip files that fail to load (may have been deleted)
-        console.warn(`Failed to restore file: ${tab.filePath}`);
-      }
-    }
-
-    // If we had an active tab but couldn't match it, default to first file
-    if (activeIndex === -1 && files.length > 0) {
-      activeIndex = 0;
-    }
-
-    editorStore.replaceAll(files, activeIndex);
     // Terminal reattachment is handled by terminal components on mount
   },
 

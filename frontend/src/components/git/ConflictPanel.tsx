@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLayoutStore } from '../../stores/layoutStore';
 import { useProjectStore } from '../../stores/projectStore';
 
 interface ConflictPanelProps {
@@ -12,8 +11,6 @@ export function ConflictPanel({ projectId }: ConflictPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const addTab = useLayoutStore(s => s.addTab);
-  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
   const refreshGitStatus = useProjectStore(s => s.refreshGitStatus);
 
   const loadConflicts = useCallback(async () => {
@@ -33,10 +30,10 @@ export function ConflictPanel({ projectId }: ConflictPanelProps) {
     loadConflicts();
   }, [loadConflicts]);
 
-  const handleOpenFile = useCallback((filePath: string) => {
-    const filename = filePath.split('/').pop() || filePath;
-    addTab(focusedPaneId, { type: 'editor', title: filename, filePath });
-  }, [addTab, focusedPaneId]);
+  const handleOpenFile = useCallback((_filePath: string) => {
+    // Editor pane type removed — file viewing not yet re-implemented
+    console.warn('File open not supported:', _filePath);
+  }, []);
 
   const handleMarkResolved = useCallback(async (filePath: string) => {
     try {

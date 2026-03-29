@@ -46,7 +46,7 @@ export function StatusBar() {
 
   const termCount = countTerminals(root);
   const activeTab = focusedLeaf?.tabs[focusedLeaf.activeTabIndex];
-  const currentFile = activeTab?.type === 'editor' ? activeTab.filePath?.split('/').pop() : null;
+  const currentFile = null;
 
   return (
     <div style={{

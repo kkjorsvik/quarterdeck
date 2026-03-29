@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useProjectStore } from '../../stores/projectStore';
-import { useEditorStore } from '../../stores/editorStore';
-import { useLayoutStore } from '../../stores/layoutStore';
 import { fuzzyMatch } from '../../lib/fuzzyMatch';
 import { OverlayContainer } from './OverlayContainer';
 
@@ -23,9 +21,6 @@ export function FileSearch() {
   const active = useOverlayStore(s => s.active);
   const close = useOverlayStore(s => s.close);
   const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
-  const openFile = useEditorStore(s => s.openFile);
-  const addTab = useLayoutStore(s => s.addTab);
-  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -78,17 +73,9 @@ export function FileSearch() {
   const handleSelect = useCallback(async (relativePath: string) => {
     if (!activeProject) return;
     close();
-    const fullPath = activeProject.path + '/' + relativePath;
-    try {
-      const content = await window.go.main.App.ReadFile(fullPath);
-      openFile(fullPath, content);
-      // Add editor tab to focused pane
-      const name = relativePath.split('/').pop() || relativePath;
-      addTab(focusedPaneId, { type: 'editor', title: name, filePath: fullPath });
-    } catch (err) {
-      console.error('Failed to open file:', err);
-    }
-  }, [activeProject, close, openFile, addTab, focusedPaneId]);
+    // File opening is no longer supported — will be removed in Task 2
+    console.warn('File open not supported:', relativePath);
+  }, [activeProject, close]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {

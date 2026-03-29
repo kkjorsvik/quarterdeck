@@ -1,7 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { FileEntry } from '../../lib/types';
-import { useEditorStore } from '../../stores/editorStore';
-import { useLayoutStore } from '../../stores/layoutStore';
 import { useProjectStore } from '../../stores/projectStore';
 
 function fileIcon(name: string): string {
@@ -51,13 +49,6 @@ export function FileNode({ entry, depth }: FileNodeProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const openFile = useEditorStore(s => s.openFile);
-  const focusedPaneId = useLayoutStore(s => s.focusedPaneId);
-  const addTab = useLayoutStore(s => s.addTab);
-  const removeTab = useLayoutStore(s => s.removeTab);
-  const setActiveTab = useLayoutStore(s => s.setActiveTab);
-  const getLeafById = useLayoutStore(s => s.getLeafById);
-  const getEditorPaneId = useLayoutStore(s => s.getEditorPaneId);
   const gitStatusMap = useProjectStore(s => s.gitStatusMap);
   const projectPath = useProjectStore(s => {
     const proj = s.projects.find(p => p.id === s.activeProjectId);
@@ -116,40 +107,9 @@ export function FileNode({ entry, depth }: FileNodeProps) {
       return;
     }
 
-    try {
-      const content = await window.go.main.App.ReadFile(entry.path);
-      openFile(entry.path, content);
-
-      // Target the editor pane if one exists, otherwise fall back to focused pane
-      const targetPaneId = getEditorPaneId() || focusedPaneId;
-
-      // Check if file is already open in a tab in the target pane
-      const leaf = getLeafById(targetPaneId);
-      if (leaf) {
-        const existingIdx = leaf.tabs.findIndex(t => t.filePath === entry.path);
-        if (existingIdx >= 0) {
-          setActiveTab(targetPaneId, existingIdx);
-          return;
-        }
-      }
-
-      const filename = entry.path.split('/').pop() || entry.path;
-      addTab(targetPaneId, { type: 'editor', title: filename, filePath: entry.path });
-
-      // Close any empty editor placeholder tabs (no filePath)
-      const updatedLeaf = getLeafById(targetPaneId);
-      if (updatedLeaf) {
-        for (let i = updatedLeaf.tabs.length - 1; i >= 0; i--) {
-          if (updatedLeaf.tabs[i].type === 'editor' && !updatedLeaf.tabs[i].filePath) {
-            removeTab(targetPaneId, i);
-            break;
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to read file:', err);
-    }
-  }, [entry, openFile, focusedPaneId, addTab, removeTab, setActiveTab, getLeafById, getEditorPaneId, toggleDir]);
+    // File opening is no longer supported — will be removed in Task 2
+    console.warn('File open not supported:', entry.path);
+  }, [entry, toggleDir]);
 
   return (
     <div>

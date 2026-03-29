@@ -28,7 +28,7 @@ export interface SessionInfo {
 }
 
 // Layout types
-export type PaneType = 'terminal' | 'editor' | 'settings' | 'runHistory' | 'review' | 'workingTree' | 'branch' | 'conflicts' | 'gitLog';
+export type PaneType = 'terminal' | 'settings' | 'runHistory' | 'review' | 'workingTree' | 'branch' | 'conflicts' | 'gitLog' | 'dashboard' | 'activity' | 'overview';
 export type SplitDirection = 'horizontal' | 'vertical';
 
 export interface PanelTab {
@@ -36,7 +36,6 @@ export interface PanelTab {
   type: PaneType;
   title: string;
   terminalId?: string;
-  filePath?: string;
   projectId?: number;
   runId?: number;
 }
@@ -58,15 +57,6 @@ export interface SplitNode {
 
 export type LayoutNode = LeafNode | SplitNode;
 
-// Editor types
-export interface OpenFile {
-  path: string;
-  name: string;
-  content: string;
-  language: string;
-  modified: boolean;
-}
-
 // Multi-project types
 export interface UpdateFields {
   name?: string;
@@ -82,17 +72,7 @@ export interface UpdateFields {
 export interface ProjectLayout {
   projectId: number;
   tilingTree: LayoutNode;
-  editorTabs: EditorTabSnapshot[];
-  activeEditorTab: string | null;
   terminalPositions: TerminalPositionSnapshot[];
-}
-
-export interface EditorTabSnapshot {
-  paneId: string;
-  filePath: string;
-  cursorPosition: { line: number; column: number };
-  scrollPosition: number;
-  dirtyContent: string | null;
 }
 
 export interface TerminalPositionSnapshot {

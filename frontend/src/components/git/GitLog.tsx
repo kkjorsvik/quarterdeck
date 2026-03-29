@@ -85,7 +85,6 @@ export function GitLog({ projectId }: GitLogProps) {
         addTab(focusedPaneId, {
           type: 'review',
           title: `${filename} @ ${sha.slice(0, 7)}`,
-          filePath,
           projectId,
         });
       }

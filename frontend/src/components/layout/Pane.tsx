@@ -4,7 +4,6 @@ import { TabBar } from './TabBar';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { TerminalPanel } from '../terminal/Terminal';
 import { useProjectStore } from '../../stores/projectStore';
-import { MonacoEditor } from '../editor/MonacoEditor';
 import { ProjectSettings } from '../settings/ProjectSettings';
 import { RunHistory } from '../review/RunHistory';
 import { RunReview } from '../review/RunReview';
@@ -65,7 +64,7 @@ export function Pane({ node }: PaneProps) {
             ) : tab.type === 'gitLog' && tab.projectId ? (
               <GitLog projectId={tab.projectId} />
             ) : (
-              <MonacoEditor filePath={tab.filePath} />
+              <div style={{ padding: 16, color: '#888' }}>Unknown panel type</div>
             )}
           </div>
         ))}
