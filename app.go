@@ -138,10 +138,6 @@ func (a *App) ReadFile(path string) (string, error) {
 	return a.fileTree.ReadFile(path)
 }
 
-func (a *App) WriteFile(path, content string) error {
-	return a.fileTree.WriteFile(path, content)
-}
-
 // Terminal methods
 func (a *App) CreateTerminal(workDir string, cols, rows int) (string, error) {
 	shell := os.Getenv("SHELL")
@@ -157,20 +153,6 @@ func (a *App) ResizeTerminal(id string, cols, rows int) error {
 
 func (a *App) CloseTerminal(id string) error {
 	return a.ptyMgr.Close(id)
-}
-
-func (a *App) ListProjectFiles(projectPath string) ([]string, error) {
-	cmd := exec.Command("git", "ls-files")
-	cmd.Dir = projectPath
-	output, err := cmd.Output()
-	if err != nil {
-		return a.fileTree.ListFiles(projectPath)
-	}
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 1 && lines[0] == "" {
-		return []string{}, nil
-	}
-	return lines, nil
 }
 
 func (a *App) GetGitBranch(projectPath string) string {

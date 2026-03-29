@@ -16,11 +16,9 @@ declare global {
           ReadDir(path: string): Promise<FileEntry[]>;
           ReadDirFiltered(path: string): Promise<FileEntry[]>;
           ReadFile(path: string): Promise<string>;
-          WriteFile(path: string, content: string): Promise<void>;
           CreateTerminal(workDir: string, cols: number, rows: number): Promise<string>;
           ResizeTerminal(id: string, cols: number, rows: number): Promise<void>;
           CloseTerminal(id: string): Promise<void>;
-          ListProjectFiles(projectPath: string): Promise<string[]>;
           GetGitBranch(projectPath: string): Promise<string>;
           UpdateProject(id: number, fields: string): Promise<void>;
           SaveLayout(projectId: number, layoutJson: string): Promise<void>;

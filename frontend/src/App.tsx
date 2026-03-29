@@ -7,7 +7,6 @@ import { useOverlayStore } from './stores/overlayStore';
 import { useProjectStore } from './stores/projectStore';
 import { AddProjectModal } from './components/sidebar/AddProjectModal';
 import { ProjectSwitcher } from './components/overlay/ProjectSwitcher';
-import { FileSearch } from './components/overlay/FileSearch';
 import { SpawnAgentModal } from './components/sidebar/SpawnAgentModal';
 import { CommitModal } from './components/review/CommitModal';
 import { useAgentEvents } from './hooks/useAgentEvents';
@@ -67,13 +66,6 @@ function App() {
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       cycleTab(focusedPaneId, e.shiftKey ? -1 : 1);
-      return;
-    }
-
-    // Ctrl+P (no shift) — file search
-    if (e.ctrlKey && !e.shiftKey && e.key === 'p') {
-      e.preventDefault();
-      toggleOverlay('fileSearch');
       return;
     }
 
@@ -166,7 +158,6 @@ function App() {
       </div>
       <AddProjectModal />
       <ProjectSwitcher />
-      <FileSearch />
       <SpawnAgentModal />
       <CommitModal />
     </div>

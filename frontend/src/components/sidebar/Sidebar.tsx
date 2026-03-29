@@ -2,7 +2,6 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore';
-import { FileTree } from '../filetree/FileTree';
 import { AddProjectModal } from './AddProjectModal';
 import { ProjectEntry } from './ProjectEntry';
 import { AgentSection } from './AgentSection';
@@ -14,7 +13,6 @@ export function Sidebar() {
   const switchProject = useProjectStore(s => s.switchProject);
   const updateProject = useProjectStore(s => s.updateProject);
   const deleteProject = useProjectStore(s => s.deleteProject);
-  const activeProject = useProjectStore(s => s.projects.find(p => p.id === s.activeProjectId));
   const projectBranches = useProjectStore(s => s.projectBranches);
   const pollBranches = useProjectStore(s => s.pollBranches);
   const openOverlay = useOverlayStore(s => s.open);
@@ -143,28 +141,6 @@ export function Sidebar() {
       {/* Agent section */}
       <AgentSection />
 
-      {/* File tree label + tree */}
-      {activeProject ? (
-        <>
-          <div style={{
-            padding: '6px 12px',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            borderBottom: '1px solid var(--border)',
-            flexShrink: 0,
-          }}>
-            FILES — {activeProject.name}
-          </div>
-          <FileTree rootPath={activeProject.path} />
-        </>
-      ) : (
-        <div style={{ padding: '16px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-          {projects.length === 0 ? 'Add a project to get started' : 'Select a project'}
-        </div>
-      )}
 
       <AddProjectModal />
     </div>

@@ -30,11 +30,6 @@ export function ConflictPanel({ projectId }: ConflictPanelProps) {
     loadConflicts();
   }, [loadConflicts]);
 
-  const handleOpenFile = useCallback((_filePath: string) => {
-    // Editor pane type removed — file viewing not yet re-implemented
-    console.warn('File open not supported:', _filePath);
-  }, []);
-
   const handleMarkResolved = useCallback(async (filePath: string) => {
     try {
       await (window as any).go.main.App.MarkFileResolved(projectId, filePath);
@@ -126,8 +121,7 @@ export function ConflictPanel({ projectId }: ConflictPanelProps) {
                 {isResolved ? '\u2713' : '!'}
               </span>
               <span
-                onClick={() => handleOpenFile(file)}
-                style={{ cursor: 'pointer', flex: 1, textDecoration: 'underline', textDecorationColor: 'var(--text-secondary)' }}
+                style={{ flex: 1 }}
                 title={file}
               >
                 {filename}
