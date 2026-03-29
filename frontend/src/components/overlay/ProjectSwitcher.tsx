@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useBackgroundTerminalStore } from '../../stores/backgroundTerminalStore';
+import { useAgentStore } from '../../stores/agentStore';
 import { fuzzyMatch } from '../../lib/fuzzyMatch';
 import { getProjectColor } from '../../lib/projectColors';
 import { OverlayContainer } from './OverlayContainer';
@@ -35,6 +36,7 @@ export function ProjectSwitcher() {
   const switchProject = useProjectStore(s => s.switchProject);
   const projectBranches = useProjectStore(s => s.projectBranches);
   const hasNewOutput = useBackgroundTerminalStore(s => s.hasNewOutput);
+  const agents = useAgentStore(s => s.agents);
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -219,6 +221,26 @@ export function ProjectSwitcher() {
                     {branch}
                   </span>
                 )}
+
+                {/* Agent health summary */}
+                {(() => {
+                  const projectAgents = Array.from(agents.values()).filter(a => a.projectId === p.id);
+                  if (projectAgents.length === 0) return null;
+                  const running = projectAgents.filter(a => a.status === 'starting' || a.status === 'working').length;
+                  const needsInput = projectAgents.filter(a => a.status === 'needs_input').length;
+                  const errors = projectAgents.filter(a => a.status === 'error').length;
+                  const done = projectAgents.filter(a => a.status === 'done').length;
+                  return (
+                    <span style={{
+                      display: 'inline-flex', gap: '6px', fontSize: '11px', flexShrink: 0,
+                    }}>
+                      {running > 0 && <span style={{ color: '#34d399' }}>{running} running</span>}
+                      {needsInput > 0 && <span style={{ color: '#facc15' }}>{needsInput} input</span>}
+                      {errors > 0 && <span style={{ color: '#f87171' }}>{errors} error</span>}
+                      {done > 0 && <span style={{ color: '#9ca3af' }}>{done} done</span>}
+                    </span>
+                  );
+                })()}
               </div>
             );
           })}
