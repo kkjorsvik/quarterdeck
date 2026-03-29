@@ -12,6 +12,7 @@ import { BranchPanel } from '../git/BranchPanel';
 import { ConflictPanel } from '../git/ConflictPanel';
 import { GitLog } from '../git/GitLog';
 import { AgentDashboard } from '../dashboard/AgentDashboard';
+import { ActivityFeed } from '../activity/ActivityFeed';
 
 interface PaneProps {
   node: LeafNode;
@@ -66,6 +67,8 @@ export function Pane({ node }: PaneProps) {
               <GitLog projectId={tab.projectId} />
             ) : tab.type === 'dashboard' ? (
               <AgentDashboard />
+            ) : tab.type === 'activity' ? (
+              <ActivityFeed />
             ) : (
               <div style={{ padding: 16, color: '#888' }}>Unknown panel type</div>
             )}

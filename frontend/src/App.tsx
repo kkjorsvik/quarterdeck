@@ -124,6 +124,10 @@ function App() {
         e.preventDefault();
         addTab(focusedPaneId, { type: 'dashboard', title: 'Agent Dashboard' });
         break;
+      case 'E':
+        e.preventDefault();
+        addTab(focusedPaneId, { type: 'activity', title: 'Activity' });
+        break;
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');

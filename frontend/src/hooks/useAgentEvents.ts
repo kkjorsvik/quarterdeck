@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useAgentStore } from '../stores/agentStore';
+import { useActivityStore } from '../stores/activityStore';
 import type { AgentStatusType } from '../lib/types';
 
 export function useAgentEvents(wsPort: number | null) {
   const updateStatus = useAgentStore(s => s.updateStatus);
   const addAgent = useAgentStore(s => s.addAgent);
+  const addActivity = useActivityStore(s => s.addEvent);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelayRef = useRef(1000);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -38,6 +40,9 @@ export function useAgentEvents(wsPort: number | null) {
           if (msg.type === 'agent_status') {
             updateStatus(msg.agentId, msg.status as AgentStatusType, msg.exitCode);
           }
+          if (msg.type === 'activity' && msg.event) {
+            addActivity(msg.event);
+          }
         } catch { /* ignore parse errors */ }
       };
 
@@ -56,5 +61,5 @@ export function useAgentEvents(wsPort: number | null) {
       if (wsRef.current) wsRef.current.close();
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     };
-  }, [wsPort, updateStatus]);
+  }, [wsPort, updateStatus, addActivity]);
 }
