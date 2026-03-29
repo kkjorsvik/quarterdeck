@@ -29,6 +29,8 @@ function App() {
   const saveCurrentLayout = useProjectStore(s => s.saveCurrentLayout);
   const persistLayout = useProjectStore(s => s.persistLayout);
   const activeProjectId = useProjectStore(s => s.activeProjectId);
+  const pollGitStatus = useProjectStore(s => s.pollGitStatus);
+  const refreshGitStatus = useProjectStore(s => s.refreshGitStatus);
 
   // Load saved layouts on startup
   useEffect(() => {
@@ -39,6 +41,14 @@ function App() {
   useEffect(() => {
     (window as any).go.main.App.GetWSPort().then((port: number) => setWsPort(port)).catch(() => {});
   }, []);
+
+  // Poll git status every 3 seconds for the active project
+  useEffect(() => {
+    if (!activeProjectId) return;
+    refreshGitStatus();
+    const interval = setInterval(() => pollGitStatus(), 3000);
+    return () => clearInterval(interval);
+  }, [activeProjectId, refreshGitStatus, pollGitStatus]);
 
   // Auto-save layout every 60 seconds
   useEffect(() => {
@@ -110,6 +120,14 @@ function App() {
         addTab(focusedPaneId, { type: 'workingTree', title: 'Working Tree', projectId: activeProjectId });
         break;
       }
+      case 'B':
+        e.preventDefault();
+        if (activeProjectId) addTab(focusedPaneId, { type: 'branch', title: 'Branches', projectId: activeProjectId });
+        break;
+      case 'L':
+        e.preventDefault();
+        if (activeProjectId) addTab(focusedPaneId, { type: 'gitLog', title: 'Git Log', projectId: activeProjectId });
+        break;
       case 'P':
         e.preventDefault();
         toggleOverlay('projectSwitcher');

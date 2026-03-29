@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Project, ProjectLayout, EditorTabSnapshot, TerminalPositionSnapshot, UpdateFields, OpenFile } from '../lib/types';
+import type { Project, ProjectLayout, EditorTabSnapshot, TerminalPositionSnapshot, UpdateFields, OpenFile, FileStatus } from '../lib/types';
 import { useLayoutStore } from './layoutStore';
 import { useEditorStore } from './editorStore';
 import { useTerminalStore } from './terminalStore';
@@ -22,6 +22,7 @@ interface ProjectState {
   activeProjectId: number | null;
   projectLayouts: Map<number, ProjectLayout>;
   projectBranches: Map<number, string>;
+  gitStatusMap: Map<string, FileStatus>;
   isSwitching: boolean;
 
   loadProjects: () => Promise<void>;
@@ -34,6 +35,8 @@ interface ProjectState {
   saveCurrentLayout: () => void;
   restoreLayout: (projectId: number) => Promise<void>;
   pollBranches: () => Promise<void>;
+  pollGitStatus: () => Promise<void>;
+  refreshGitStatus: () => Promise<void>;
   loadSavedLayouts: () => Promise<void>;
   persistLayout: (projectId: number) => Promise<void>;
 }
@@ -43,6 +46,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   activeProjectId: null,
   projectLayouts: new Map(),
   projectBranches: new Map(),
+  gitStatusMap: new Map(),
   isSwitching: false,
 
   loadProjects: async () => {
@@ -309,5 +313,25 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     } catch (err) {
       console.error(`Failed to persist layout for project ${projectId}:`, err);
     }
+  },
+
+  pollGitStatus: async () => {
+    const state = get();
+    if (state.activeProjectId === null) return;
+
+    try {
+      const statuses: FileStatus[] = await (window as any).go.main.App.GetGitStatus(state.activeProjectId);
+      const map = new Map<string, FileStatus>();
+      for (const s of (statuses || [])) {
+        map.set(s.path, s);
+      }
+      set({ gitStatusMap: map });
+    } catch {
+      // Ignore errors — project may not be a git repo
+    }
+  },
+
+  refreshGitStatus: async () => {
+    await get().pollGitStatus();
   },
 }));
