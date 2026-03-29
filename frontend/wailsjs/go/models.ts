@@ -1,5 +1,73 @@
+export namespace activity {
+	
+	export class Event {
+	    id: number;
+	    eventType: string;
+	    agentId: string;
+	    projectId: number;
+	    title: string;
+	    detail: string;
+	    // Go type: time
+	    createdAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Event(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.eventType = source["eventType"];
+	        this.agentId = source["agentId"];
+	        this.projectId = source["projectId"];
+	        this.title = source["title"];
+	        this.detail = source["detail"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace agent {
 	
+	export class SpawnParams {
+	    projectId: number;
+	    agentType: string;
+	    taskDescription: string;
+	    workDir: string;
+	    customCmd: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SpawnParams(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.agentType = source["agentType"];
+	        this.taskDescription = source["taskDescription"];
+	        this.workDir = source["workDir"];
+	        this.customCmd = source["customCmd"];
+	    }
+	}
 	export class Agent {
 	    id: string;
 	    runId: number;
@@ -15,6 +83,7 @@ export namespace agent {
 	    // Go type: time
 	    startedAt: any;
 	    exitCode?: number;
+	    spawnParams?: SpawnParams;
 	
 	    static createFrom(source: any = {}) {
 	        return new Agent(source);
@@ -35,6 +104,7 @@ export namespace agent {
 	        this.baseCommit = source["baseCommit"];
 	        this.startedAt = this.convertValues(source["startedAt"], null);
 	        this.exitCode = source["exitCode"];
+	        this.spawnParams = this.convertValues(source["spawnParams"], SpawnParams);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -131,6 +201,7 @@ export namespace agent {
 	        this.deletions = source["deletions"];
 	    }
 	}
+	
 	export class SpawnResult {
 	    agentId: string;
 	    ptySessionId: string;

@@ -3,6 +3,7 @@
 import {project} from '../models';
 import {git} from '../models';
 import {agent} from '../models';
+import {activity} from '../models';
 import {filetree} from '../models';
 
 export function AbortMerge(arg1:number):Promise<void>;
@@ -28,6 +29,10 @@ export function CreateWorktree(arg1:number,arg2:string):Promise<string>;
 export function DeleteBranch(arg1:number,arg2:string,arg3:boolean):Promise<void>;
 
 export function DeleteProject(arg1:number):Promise<void>;
+
+export function GetAgentLog(arg1:string):Promise<string>;
+
+export function GetAgentStateHistory(arg1:string):Promise<Array<Record<string, string>>>;
 
 export function GetAllLayouts():Promise<Record<number, string>>;
 
@@ -59,15 +64,17 @@ export function GetWorkingTreeFileDiff(arg1:number,arg2:string):Promise<agent.Fi
 
 export function HasConflicts(arg1:number):Promise<boolean>;
 
+export function ListActivityEvents(arg1:number,arg2:number):Promise<Array<activity.Event>>;
+
 export function ListAgents():Promise<Array<agent.Agent>>;
 
 export function ListBranches(arg1:number):Promise<Array<git.Branch>>;
 
 export function ListConflictFiles(arg1:number):Promise<Array<string>>;
 
-export function ListProjectAgents(arg1:number):Promise<Array<agent.Agent>>;
+export function ListProjectActivityEvents(arg1:number,arg2:number):Promise<Array<activity.Event>>;
 
-export function ListProjectFiles(arg1:string):Promise<Array<string>>;
+export function ListProjectAgents(arg1:number):Promise<Array<agent.Agent>>;
 
 export function ListProjectRuns(arg1:number):Promise<Array<agent.AgentRunWithStats>>;
 
@@ -89,9 +96,9 @@ export function ReadFile(arg1:string):Promise<string>;
 
 export function RemoveWorktree(arg1:number,arg2:string,arg3:boolean):Promise<void>;
 
-export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
-
 export function RerunAgent(arg1:string):Promise<agent.SpawnResult>;
+
+export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function RevertFile(arg1:number,arg2:string,arg3:string,arg4:string):Promise<void>;
 
@@ -112,5 +119,3 @@ export function StopAgent(arg1:string):Promise<void>;
 export function SwitchBranch(arg1:number,arg2:string):Promise<void>;
 
 export function UpdateProject(arg1:number,arg2:project.UpdateFields):Promise<void>;
-
-export function WriteFile(arg1:string,arg2:string):Promise<void>;

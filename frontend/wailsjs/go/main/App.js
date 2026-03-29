@@ -50,6 +50,14 @@ export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
 
+export function GetAgentLog(arg1) {
+  return window['go']['main']['App']['GetAgentLog'](arg1);
+}
+
+export function GetAgentStateHistory(arg1) {
+  return window['go']['main']['App']['GetAgentStateHistory'](arg1);
+}
+
 export function GetAllLayouts() {
   return window['go']['main']['App']['GetAllLayouts']();
 }
@@ -110,6 +118,10 @@ export function HasConflicts(arg1) {
   return window['go']['main']['App']['HasConflicts'](arg1);
 }
 
+export function ListActivityEvents(arg1, arg2) {
+  return window['go']['main']['App']['ListActivityEvents'](arg1, arg2);
+}
+
 export function ListAgents() {
   return window['go']['main']['App']['ListAgents']();
 }
@@ -122,12 +134,12 @@ export function ListConflictFiles(arg1) {
   return window['go']['main']['App']['ListConflictFiles'](arg1);
 }
 
-export function ListProjectAgents(arg1) {
-  return window['go']['main']['App']['ListProjectAgents'](arg1);
+export function ListProjectActivityEvents(arg1, arg2) {
+  return window['go']['main']['App']['ListProjectActivityEvents'](arg1, arg2);
 }
 
-export function ListProjectFiles(arg1) {
-  return window['go']['main']['App']['ListProjectFiles'](arg1);
+export function ListProjectAgents(arg1) {
+  return window['go']['main']['App']['ListProjectAgents'](arg1);
 }
 
 export function ListProjectRuns(arg1) {
@@ -170,16 +182,16 @@ export function RemoveWorktree(arg1, arg2, arg3) {
   return window['go']['main']['App']['RemoveWorktree'](arg1, arg2, arg3);
 }
 
+export function RerunAgent(arg1) {
+  return window['go']['main']['App']['RerunAgent'](arg1);
+}
+
 export function ResizeTerminal(arg1, arg2, arg3) {
   return window['go']['main']['App']['ResizeTerminal'](arg1, arg2, arg3);
 }
 
 export function RevertFile(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['RevertFile'](arg1, arg2, arg3, arg4);
-}
-
-export function RerunAgent(arg1) {
-  return window['go']['main']['App']['RerunAgent'](arg1);
 }
 
 export function SaveLayout(arg1, arg2) {
@@ -216,8 +228,4 @@ export function SwitchBranch(arg1, arg2) {
 
 export function UpdateProject(arg1, arg2) {
   return window['go']['main']['App']['UpdateProject'](arg1, arg2);
-}
-
-export function WriteFile(arg1, arg2) {
-  return window['go']['main']['App']['WriteFile'](arg1, arg2);
 }
