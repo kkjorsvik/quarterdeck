@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAgentStore } from '../../stores/agentStore';
 import { useLayoutStore } from '../../stores/layoutStore';
-import type { AgentState } from '../../lib/types';
+import type { AgentState, FileStatus } from '../../lib/types';
 
 const AGENT_TYPES = [
   { value: 'claude_code', label: 'Claude Code' },
@@ -29,6 +29,20 @@ export function SpawnAgentModal() {
   const [customCmd, setCustomCmd] = useState('');
   const [error, setError] = useState('');
   const [launching, setLaunching] = useState(false);
+  const [useWorktree, setUseWorktree] = useState(false);
+  const [dirtyFiles, setDirtyFiles] = useState<FileStatus[]>([]);
+  const [stashing, setStashing] = useState(false);
+
+  // Read agents from store for auto-check logic
+  const agentMap = useAgentStore(s => s.agents);
+  const refreshGitStatus = useProjectStore(s => s.refreshGitStatus);
+
+  const hasActiveProjectAgents = useMemo(() => {
+    if (projectId === null) return false;
+    return Array.from(agentMap.values()).some(
+      a => a.projectId === projectId && ['starting', 'working', 'needs_input'].includes(a.status)
+    );
+  }, [agentMap, projectId]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -39,11 +53,27 @@ export function SpawnAgentModal() {
       setCustomCmd('');
       setError('');
       setLaunching(false);
+      setUseWorktree(false);
+      setDirtyFiles([]);
+      setStashing(false);
       // Set default workDir from active project
       const proj = projects.find(p => p.id === activeProjectId);
       setWorkDir(proj?.path || '');
+      // Check git status on open
+      if (activeProjectId) {
+        (window as any).go.main.App.GetGitStatus(activeProjectId)
+          .then((statuses: FileStatus[]) => setDirtyFiles(statuses || []))
+          .catch(() => setDirtyFiles([]));
+      }
     }
   }, [active, activeProjectId, projects]);
+
+  // Auto-check worktree when project has active agents
+  useEffect(() => {
+    if (active === 'spawnAgent' && hasActiveProjectAgents) {
+      setUseWorktree(true);
+    }
+  }, [active, hasActiveProjectAgents]);
 
   // Update workDir when project selection changes
   useEffect(() => {
@@ -53,6 +83,20 @@ export function SpawnAgentModal() {
     }
   }, [projectId, active, projects]);
 
+  const handleStashNow = useCallback(async () => {
+    if (projectId === null) return;
+    setStashing(true);
+    try {
+      await (window as any).go.main.App.StashPush(projectId, 'Auto-stash before agent spawn');
+      setDirtyFiles([]);
+      await refreshGitStatus();
+    } catch (err: any) {
+      setError(err?.message || String(err));
+    } finally {
+      setStashing(false);
+    }
+  }, [projectId, refreshGitStatus]);
+
   const handleLaunch = useCallback(async () => {
     if (launching) return;
     if (projectId === null) {
@@ -61,10 +105,37 @@ export function SpawnAgentModal() {
     }
     setError('');
     setLaunching(true);
+
+    let effectiveWorkDir = workDir;
+    let worktreePath: string | null = null;
+
     try {
+      // Create worktree if requested
+      if (useWorktree) {
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const rand = Math.random().toString(36).slice(2, 6);
+        const branchName = `agent/${agentType}/${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}-${rand}`;
+        try {
+          const wtPath: string = await (window as any).go.main.App.CreateWorktree(projectId, branchName);
+          worktreePath = wtPath;
+          effectiveWorkDir = wtPath;
+        } catch (err: any) {
+          setError('Worktree creation failed: ' + (err?.message || String(err)));
+          setLaunching(false);
+          return;
+        }
+      }
+
       const result = await (window as any).go.main.App.SpawnAgent(
-        projectId, agentType, taskDesc, workDir, agentType === 'custom' ? customCmd : ''
-      );
+        projectId, agentType, taskDesc, effectiveWorkDir, agentType === 'custom' ? customCmd : ''
+      ).catch(async (err: any) => {
+        // Clean up worktree on spawn failure
+        if (worktreePath) {
+          try { await (window as any).go.main.App.RemoveWorktree(projectId, worktreePath, true); } catch {}
+        }
+        throw err;
+      });
       // Add to agent store
       const proj = projects.find(p => p.id === projectId);
       const displayName = agentType === 'custom' ? customCmd.split('/').pop() || 'Custom' :
@@ -102,7 +173,7 @@ export function SpawnAgentModal() {
     } finally {
       setLaunching(false);
     }
-  }, [launching, projectId, agentType, taskDesc, workDir, customCmd, projects, addAgent, addTab, focusedPaneId, close, activeProjectId, switchProject]);
+  }, [launching, projectId, agentType, taskDesc, workDir, customCmd, projects, addAgent, addTab, focusedPaneId, close, activeProjectId, switchProject, useWorktree]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -202,6 +273,44 @@ export function SpawnAgentModal() {
           onChange={e => setWorkDir(e.target.value)}
           style={inputStyle}
         />
+
+        {/* Worktree isolation */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={useWorktree}
+            onChange={e => setUseWorktree(e.target.checked)}
+          />
+          Isolate in worktree
+        </label>
+        {useWorktree && hasActiveProjectAgents && (
+          <div style={{ fontSize: '11px', color: '#facc15', padding: '0 4px' }}>
+            Auto-enabled: project has active agents running.
+          </div>
+        )}
+
+        {/* Dirty tree warning */}
+        {dirtyFiles.length > 0 && !useWorktree && (
+          <div style={{
+            fontSize: '11px', color: '#facc15', padding: '6px 8px',
+            background: 'rgba(250, 204, 21, 0.1)', borderRadius: '4px',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}>
+            <span>Working tree has {dirtyFiles.length} uncommitted change{dirtyFiles.length !== 1 ? 's' : ''}.</span>
+            <button
+              onClick={handleStashNow}
+              disabled={stashing}
+              style={{
+                background: 'var(--bg-primary)', border: '1px solid var(--border)',
+                borderRadius: '3px', padding: '2px 8px', fontSize: '11px',
+                color: 'var(--text-primary)', cursor: 'pointer',
+                opacity: stashing ? 0.5 : 1,
+              }}
+            >
+              {stashing ? 'Stashing...' : 'Stash Now'}
+            </button>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
