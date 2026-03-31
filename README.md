@@ -1,4 +1,5 @@
 # Quarterdeck
+(Putting this on the back burner for now as I'm not sure about the idea at the moment, might come back to it later.)
 
 A Linux-native IDE for the AI agent era. Built for developers who work across multiple projects simultaneously by delegating to AI coding agents.
 
